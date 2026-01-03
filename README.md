@@ -1,36 +1,77 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CareerAI - Intelligent Career Management Platform
 
-## Getting Started
+CareerAI is a comprehensive platform designed to help job seekers manage their career journey. It leverages Artificial Intelligence (OpenAI GPT-4o) to analyze resumes, provide improvement suggestions, track job applications, and calculate match scores against job descriptions.
 
-First, run the development server:
+## 🚀 Key Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+### 1. Resume Management
+-   **Upload & Parsing**: Upload PDF or DOCX resumes. The system automatically extracts text content.
+-   **Versioning**: Keep track of multiple versions of your resume.
+-   **AI Analysis**:
+    -   **Scoring**: Get a 0-100 score on your resume's effectiveness.
+    -   **Summary**: Auto-generated professional summary.
+    -   **Improvements**: Actionable bullet points to enhance your resume.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Job Application Tracking
+-   **Dashboard**: Manage all your applications in one place.
+-   **Status Tracking**: Track applications through stages (Applied, Interview, Offer, Rejected).
+-   **Organization**: Link specific resume versions to job applications for better context.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 3. AI Job Matching
+-   **Fit Analysis**: Compare your resume against a specific job description.
+-   **Match Score**: Receive a percentage score indicating how well you fit the role.
+-   **Gap Analysis**: Identify missing keywords and skills required for the job that are missing from your resume.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🛠 Tech Stack
 
-## Learn More
+-   **Frontend**: Next.js 14+ (App Router), TailwindCSS, Lucide Icons.
+-   **Backend**: Supabase (PostgreSQL, Auth, Storage, Row Level Security).
+-   **AI**: OpenAI API (GPT-4o).
+-   **Parsing**: `pdf-parse` (PDF) and `mammoth` (DOCX).
 
-To learn more about Next.js, take a look at the following resources:
+## 🏁 Getting Started
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Prerequisites
+-   Node.js 18+
+-   Supabase Account
+-   OpenAI API Key
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Installation
 
-## Deploy on Vercel
+1.  **Clone the repository**
+    ```bash
+    git clone https://github.com/yourusername/ai-resume-analyzer.git
+    cd ai-resume-analyzer
+    ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+2.  **Install Dependencies**
+    ```bash
+    yarn install
+    ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+3.  **Environment Setup**
+    Create a `.env.local` file in the root directory:
+    ```env
+    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+    OPENAI_API_KEY=your_openai_api_key
+    ```
+
+4.  **Database Migration**
+    Run the SQL scripts located in `supabase/migrations/` in your Supabase SQL Editor to set up the schema and RLS policies.
+    -   `20240101000000_initial_schema.sql`: Core tables (profiles, resumes, jobs).
+    -   `20260103000000_add_match_analysis.sql`: Adds AI matching support.
+
+5.  **Run Development Server**
+    ```bash
+    yarn dev
+    ```
+
+    Open [http://localhost:3000](http://localhost:3000) to view the app.
+
+## 🔒 Security
+-   **Authentication**: Managed via Supabase Auth.
+-   **Data Privacy**: Row Level Security (RLS) ensures users can only access their own data.
+
+## 📄 License
+MIT
