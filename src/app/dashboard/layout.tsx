@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Briefcase, FileText, User } from 'lucide-react'
+import Logo from '@/components/Logo'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
@@ -22,9 +23,7 @@ export default async function DashboardLayout({
                     <div className="flex justify-between h-16">
                         <div className="flex">
                             <div className="flex-shrink-0 flex items-center">
-                                <Link href="/dashboard" className="text-xl font-bold text-indigo-600">
-                                    CareerAI
-                                </Link>
+                                <Logo />
                             </div>
                             <div className="hidden sm:-my-px sm:ml-6 sm:flex sm:space-x-8">
                                 <Link
