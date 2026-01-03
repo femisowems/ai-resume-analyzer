@@ -1,5 +1,5 @@
 import mammoth from 'mammoth';
-const pdf = require('pdf-parse');
+const pdf = require('pdf-parse/lib/pdf-parse.js');
 
 export async function parseResumeFile(file: File): Promise<string> {
     const buffer = Buffer.from(await file.arrayBuffer());

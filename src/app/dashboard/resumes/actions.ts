@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { parseResumeFile } from '@/lib/parse-resume'
+import { analyzeResume } from '@/lib/openai'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
@@ -42,7 +43,17 @@ export async function uploadResume(formData: FormData) {
         console.error('Parse Error:', e)
     }
 
-    // 4. Create Resume Record
+    // 4. AI Analysis
+    let aiResult = null;
+    try {
+        if (parsedText) {
+            aiResult = await analyzeResume(parsedText);
+        }
+    } catch (e) {
+        console.error("AI Analysis Error:", e);
+    }
+
+    // 5. Create Resume Record
     const { data: resume, error: dbError } = await supabase
         .from('resumes')
         .insert({
@@ -58,9 +69,9 @@ export async function uploadResume(formData: FormData) {
         throw new Error('Failed to create resume record')
     }
 
-    // 5. Create Initial Version
+    // 6. Create Initial Version
     const initialContent = {
-        summary: parsedText.slice(0, 500) + '...',
+        summary: aiResult?.summary || parsedText.slice(0, 500) + '...',
         raw_text: parsedText,
         skills: [],
         experience: [],
@@ -73,7 +84,8 @@ export async function uploadResume(formData: FormData) {
         .insert({
             resume_id: resume.id,
             version_number: 1,
-            content: initialContent
+            content: initialContent,
+            analysis_result: aiResult
         })
         .select()
         .single()
@@ -83,7 +95,7 @@ export async function uploadResume(formData: FormData) {
         throw new Error('Failed to save version')
     }
 
-    // 6. Update current version pointer
+    // 7. Update current version pointer
     await supabase
         .from('resumes')
         .update({ current_version_id: version.id })
