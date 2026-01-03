@@ -22,11 +22,13 @@ export default async function DashboardLayout({
                     <div className="flex justify-between h-16">
                         <div className="flex">
                             <div className="flex-shrink-0 flex items-center">
-                                <span className="text-xl font-bold text-indigo-600">CareerAI</span>
+                                <Link href="/dashboard" className="text-xl font-bold text-indigo-600">
+                                    CareerAI
+                                </Link>
                             </div>
                             <div className="hidden sm:-my-px sm:ml-6 sm:flex sm:space-x-8">
                                 <Link
-                                    href="/dashboard"
+                                    href="/dashboard/resumes"
                                     className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
                                 >
                                     <FileText className="w-4 h-4 mr-2" />
@@ -42,10 +44,10 @@ export default async function DashboardLayout({
                             </div>
                         </div>
                         <div className="hidden sm:ml-6 sm:flex sm:items-center">
-                            <div className="flex items-center text-sm text-gray-500">
+                            <Link href="/dashboard/settings" className="flex items-center text-sm text-gray-500 hover:text-indigo-600 transition">
                                 <User className="w-4 h-4 mr-2" />
                                 {user.email}
-                            </div>
+                            </Link>
                         </div>
                     </div>
                 </div>
@@ -54,6 +56,30 @@ export default async function DashboardLayout({
             <main className="flex-1 max-w-7xl w-full mx-auto py-6 sm:px-6 lg:px-8">
                 {children}
             </main>
+
+            <footer className="bg-white border-t border-gray-200 mt-auto">
+                <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+                    <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+                        <div className="text-sm text-gray-500">
+                            © {new Date().getFullYear()} CareerAI. Built with Next.js, Supabase & OpenAI.
+                        </div>
+                        <div className="flex space-x-6 text-sm">
+                            <Link href="/dashboard" className="text-gray-500 hover:text-indigo-600 transition">
+                                Dashboard
+                            </Link>
+                            <Link href="/dashboard/resumes" className="text-gray-500 hover:text-indigo-600 transition">
+                                Resumes
+                            </Link>
+                            <Link href="/dashboard/jobs" className="text-gray-500 hover:text-indigo-600 transition">
+                                Jobs
+                            </Link>
+                            <Link href="/dashboard/settings" className="text-gray-500 hover:text-indigo-600 transition">
+                                Settings
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </footer>
         </div>
     )
 }

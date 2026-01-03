@@ -22,6 +22,18 @@ CareerAI is a comprehensive platform designed to help job seekers manage their c
 -   **Match Score**: Receive a percentage score indicating how well you fit the role.
 -   **Gap Analysis**: Identify missing keywords and skills required for the job that are missing from your resume.
 
+### 4. AI Interview Coach
+-   **Custom Questions**: Generate tailored technical and behavioral interview questions based on your resume and the job description.
+-   **STAR Method Answers**: Get suggested answers using the STAR (Situation, Task, Action, Result) framework.
+
+### 5. Kanban Board
+-   **Visual Pipeline**: View your job applications in a Kanban-style board organized by status.
+-   **Drag-and-Drop**: Easily update application status by dragging cards between columns.
+
+### 6. User Settings
+-   **Profile Management**: Edit your display name and view account details.
+-   **Secure Authentication**: Sign out functionality integrated with Supabase Auth.
+
 ## 🛠 Tech Stack
 
 -   **Frontend**: Next.js 14+ (App Router), TailwindCSS, Lucide Icons.
@@ -60,7 +72,9 @@ CareerAI is a comprehensive platform designed to help job seekers manage their c
 4.  **Database Migration**
     Run the SQL scripts located in `supabase/migrations/` in your Supabase SQL Editor to set up the schema and RLS policies.
     -   `20240101000000_initial_schema.sql`: Core tables (profiles, resumes, jobs).
+    -   `20240101000001_storage_bucket.sql`: Storage bucket for resume files.
     -   `20260103000000_add_match_analysis.sql`: Adds AI matching support.
+    -   `20260103010000_add_interview_questions.sql`: Adds AI interview prep support.
 
 5.  **Run Development Server**
     ```bash

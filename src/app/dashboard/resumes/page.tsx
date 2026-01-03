@@ -29,15 +29,15 @@ export default async function ResumesPage() {
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {resumes?.map((resume) => (
-                    <div key={resume.id} className="bg-white shadow rounded-lg p-6 border hover:border-indigo-500 transition">
+                    <Link key={resume.id} href={`/dashboard/resumes/${resume.id}`} className="block bg-white shadow rounded-lg p-6 border hover:border-indigo-500 transition">
                         <h3 className="text-lg font-medium text-gray-900 truncate">{resume.title}</h3>
                         <p className="text-sm text-gray-500 mt-1">Uploaded: {new Date(resume.created_at).toLocaleDateString()}</p>
                         <div className="mt-4 flex gap-2">
                             <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">
-                                Version 1.0
+                                Version {resume.current_version_number || '1.0'}
                             </span>
                         </div>
-                    </div>
+                    </Link>
                 ))}
 
                 {resumes?.length === 0 && (
