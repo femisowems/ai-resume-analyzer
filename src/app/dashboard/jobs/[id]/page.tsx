@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft, Briefcase, Calendar, Clock } from 'lucide-react'
-import { updateJobApplication, analyzeJobMatch } from '../actions'
+import { updateJobApplication, analyzeJobMatch, generateQuestions } from '../actions'
 
 export default async function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const supabase = await createClient()
@@ -181,6 +181,53 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
                             />
                         </div>
 
+
+
+                        {/* AI Interview Coach */}
+                        <div className="border-t border-gray-200 pt-6 mt-6">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-4">AI Interview Coach 🎤</h3>
+
+                            {!job.interview_questions ? (
+                                <div className="bg-purple-50 rounded-lg p-6 text-center border border-purple-100">
+                                    <p className="text-purple-800 mb-4">
+                                        Generate custom technical & behavioral questions for this role.
+                                    </p>
+                                    <button
+                                        formAction={async () => {
+                                            'use server'
+                                            await generateQuestions(job.id)
+                                        }}
+                                        className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition shadow-sm"
+                                    >
+                                        Generate Interview Questions
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {(job.interview_questions as any).map((q: any, i: number) => (
+                                        <div key={i} className="bg-white border rounded-lg p-4 shadow-sm">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <span className={`text-xs font-bold px-2 py-1 rounded uppercase tracking-wide ${q.type === 'technical' ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800'
+                                                    }`}>
+                                                    {q.type}
+                                                </span>
+                                            </div>
+                                            <h4 className="font-medium text-gray-900 mb-3">{q.question}</h4>
+
+                                            <details className="group">
+                                                <summary className="flex cursor-pointer items-center text-sm text-gray-500 hover:text-indigo-600">
+                                                    <span>Show Suggested Answer</span>
+                                                </summary>
+                                                <p className="mt-2 text-sm text-gray-600 bg-gray-50 p-3 rounded leading-relaxed border-l-2 border-indigo-200">
+                                                    {q.answer}
+                                                </p>
+                                            </details>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
                         <div className="flex justify-end pt-4 border-t border-gray-200">
                             <button type="submit" className="bg-indigo-600 text-white px-4 py-2 rounded shadow hover:bg-indigo-700 transition">
                                 Save Changes
@@ -188,7 +235,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
                         </div>
                     </form>
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     )
 }

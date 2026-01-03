@@ -137,3 +137,46 @@ export async function analyzeJobMatch(jobId: string) {
 
     revalidatePath(`/dashboard/jobs/${jobId}`)
 }
+
+import { generateInterviewQuestions } from '@/lib/openai'
+
+export async function generateQuestions(jobId: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) throw new Error('Unauthorized')
+
+    const { data: job } = await supabase
+        .from('job_applications')
+        .select(`*, resume_version:resume_versions(content)`)
+        .eq('id', jobId)
+        .eq('user_id', user.id)
+        .single()
+
+    if (!job || !job.resume_version) throw new Error('Job or Resume not found')
+
+    // Check if questions already exist to avoid re-generating (optional check, but good for cost)
+    // if (job.interview_questions) return; 
+
+    const resumeText = job.resume_version.content?.raw_text || ''
+    const jobDescription = job.notes || ''
+
+    if (!resumeText || !jobDescription) throw new Error('Missing content for generation')
+
+    try {
+        const questions = await generateInterviewQuestions(resumeText, jobDescription)
+
+        const { error } = await supabase
+            .from('job_applications')
+            .update({ interview_questions: questions })
+            .eq('id', jobId)
+
+        if (error) throw error
+
+    } catch (e) {
+        console.error("Gen Questions Error", e)
+        throw new Error("Failed to generate questions")
+    }
+
+    revalidatePath(`/dashboard/jobs/${jobId}`)
+}

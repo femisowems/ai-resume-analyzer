@@ -110,3 +110,52 @@ export async function matchResumeToJob(resumeText: string, jobDescription: strin
         throw new Error("Failed to match resume");
     }
 }
+
+export interface InterviewQuestion {
+    question: string;
+    answer: string;
+    type: 'technical' | 'behavioral';
+}
+
+export async function generateInterviewQuestions(resumeText: string, jobDescription: string): Promise<InterviewQuestion[]> {
+    if (!process.env.OPENAI_API_KEY) throw new Error("OpenAI API Key is missing");
+
+    const prompt = `
+    Based on the Resume and Job Description below, generate 5 interview questions (mixture of technical and behavioral).
+    For each question, provide a suggested answer using the STAR method if applicable.
+
+    Return JSON:
+    {
+        "questions": [
+            { "question": "string", "answer": "string", "type": "technical" | "behavioral" }
+        ]
+    }
+
+    Resume:
+    ${resumeText.slice(0, 3000)}
+
+    Job Description:
+    ${jobDescription.slice(0, 1000)}
+    `;
+
+    try {
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4o",
+            messages: [
+                { role: "system", content: "You are a generic interviewer." },
+                { role: "user", content: prompt }
+            ],
+            response_format: { type: "json_object" },
+            temperature: 0.7,
+        });
+
+        const content = completion.choices[0].message.content;
+        if (!content) throw new Error("No content");
+
+        const result = JSON.parse(content);
+        return result.questions;
+    } catch (e) {
+        console.error("Interview Gen Error", e);
+        throw new Error("Failed to generate questions");
+    }
+}
