@@ -65,14 +65,30 @@ export async function updateJobApplication(formData: FormData) {
     const id = formData.get('id') as string
     const status = formData.get('status') as string
     const notes = formData.get('notes') as string
+    const resume_id = formData.get('resume_id') as string
+
+    const updateData: any = {
+        status,
+        notes,
+        updated_at: new Date().toISOString()
+    }
+
+    // If resume_id is provided, find its current version
+    if (resume_id) {
+        const { data: resume } = await supabase
+            .from('resumes')
+            .select('current_version_id')
+            .eq('id', resume_id)
+            .single()
+
+        if (resume) {
+            updateData.resume_version_id = resume.current_version_id
+        }
+    }
 
     const { error } = await supabase
         .from('job_applications')
-        .update({
-            status,
-            notes,
-            updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', id)
         .eq('user_id', user.id)
 

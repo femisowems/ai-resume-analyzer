@@ -1,8 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, Briefcase, Calendar, Clock } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Briefcase, Calendar, Clock } from 'lucide-react'
 import { updateJobApplication, analyzeJobMatch, generateQuestions } from '../actions'
+import LinkedResumeSelector from './LinkedResumeSelector'
 
 export default async function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const supabase = await createClient()
@@ -20,29 +21,86 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
             resume_version:resume_versions(
                 id,
                 version_number,
-                resume:resumes(title)
+                resume:resumes(
+                    id,
+                    title,
+                    raw_file_path
+                )
             )
         `)
         .eq('id', id)
         .eq('user_id', user.id)
         .single()
 
+    const { data: resumes } = await supabase
+        .from('resumes')
+        .select(`
+            id,
+            title,
+            current_version:resume_versions(
+                version_number
+            )
+        `)
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false })
+
+    // Fetch all job IDs to calculate Prev/Next
+    const { data: allJobs } = await supabase
+        .from('job_applications')
+        .select('id')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+
+    const currentIndex = allJobs?.findIndex(j => j.id === id) ?? -1
+    const nextJobId = currentIndex !== -1 && currentIndex < (allJobs?.length ?? 0) - 1 ? allJobs?.[currentIndex + 1].id : null
+    const prevJobId = currentIndex > 0 ? allJobs?.[currentIndex - 1].id : null
+
     if (!job) {
         notFound()
     }
 
+    // Generate Signed URL for download
+    let downloadUrl: string | null = null
+    if (job.resume_version?.resume?.raw_file_path) {
+        const { data } = await supabase
+            .storage
+            .from('resumes')
+            .createSignedUrl(job.resume_version.resume.raw_file_path, 3600) // 1 hour expiry
+
+        if (data) {
+            downloadUrl = data.signedUrl
+        }
+    }
+
     // Helper to format date
     const formatDate = (dateString: string | null) => {
+        // ... (rest of helper) omitted for brevity in change, assume context matches
         if (!dateString) return 'N/A'
         return new Date(dateString).toLocaleDateString()
     }
 
     return (
         <div className="p-8 max-w-4xl mx-auto">
-            <Link href="/dashboard/jobs" className="flex items-center text-sm text-gray-500 hover:text-indigo-600 mb-6">
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                Back to Jobs
-            </Link>
+            <div className="flex justify-between items-center mb-6">
+                <Link href="/dashboard/jobs" className="flex items-center text-sm text-gray-500 hover:text-indigo-600">
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    Back to Jobs
+                </Link>
+                <div className="flex space-x-2">
+                    {prevJobId && (
+                        <Link href={`/dashboard/jobs/${prevJobId}`} className="flex items-center text-sm text-gray-500 hover:text-indigo-600 bg-white border border-gray-200 px-3 py-1 rounded-md shadow-sm transition hover:bg-gray-50">
+                            <ChevronLeft className="h-4 w-4 mr-1" />
+                            Previous Job
+                        </Link>
+                    )}
+                    {nextJobId && (
+                        <Link href={`/dashboard/jobs/${nextJobId}`} className="flex items-center text-sm text-gray-500 hover:text-indigo-600 bg-white border border-gray-200 px-3 py-1 rounded-md shadow-sm transition hover:bg-gray-50">
+                            Next Job
+                            <ChevronRight className="h-4 w-4 ml-1" />
+                        </Link>
+                    )}
+                </div>
+            </div>
 
             <div className="bg-white shadow rounded-lg overflow-hidden">
                 {/* Header */}
@@ -87,17 +145,13 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">Linked Resume</label>
-                                <div className="mt-2 text-sm text-gray-900 flex items-center">
-                                    {job.resume_version ? (
-                                        <>
-                                            <Link href={`/dashboard/resumes/${job.resume_version.resume.id}`} className="text-indigo-600 hover:underline">
-                                                {job.resume_version.resume.title} (v{job.resume_version.version_number})
-                                            </Link>
-                                        </>
-                                    ) : (
-                                        <span className="text-gray-500 italic">No specific resume linked</span>
-                                    )}
-                                </div>
+                                <LinkedResumeSelector
+                                    jobId={job.id}
+                                    resumes={resumes as any}
+                                    initialResumeId={job.resume_version?.resume?.id}
+                                    initialResumeTitle={job.resume_version?.resume?.title}
+                                    downloadUrl={downloadUrl}
+                                />
                             </div>
                         </div>
 
@@ -235,7 +289,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
                         </div>
                     </form>
                 </div>
-            </div >
-        </div >
+            </div>
+        </div>
     )
 }
