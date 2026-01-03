@@ -56,3 +56,57 @@ export async function analyzeResume(text: string): Promise<AnalysisResult> {
         throw new Error("Failed to analyze resume with AI");
     }
 }
+
+export interface MatchResult {
+    score: number;
+    analysis: string;
+    missing_keywords: string[];
+}
+
+export async function matchResumeToJob(resumeText: string, jobDescription: string): Promise<MatchResult> {
+    if (!process.env.OPENAI_API_KEY) {
+        throw new Error("OpenAI API Key is missing");
+    }
+
+    const prompt = `
+    You are a Hiring Manager AI. Compare the following Resume Text against the Job Description.
+    
+    1. Provide a Match Score (0-100) based on skills/experience alignment.
+    2. Provide a brief analysis (2-3 sentences) explaining the score.
+    3. List key missing keywords or skills from the resume that are in the job description.
+
+    Return JSON:
+    {
+      "score": number,
+      "analysis": "string",
+      "missing_keywords": ["string", "string"]
+    }
+
+    Resume:
+    ${resumeText.slice(0, 5000)}
+
+    Job Description:
+    ${jobDescription.slice(0, 2000)}
+    `;
+
+    try {
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4o",
+            messages: [
+                { role: "system", content: "You are a helpful assistant that outputs JSON." },
+                { role: "user", content: prompt }
+            ],
+            response_format: { type: "json_object" },
+            temperature: 0.7,
+        });
+
+        const content = completion.choices[0].message.content;
+        if (!content) throw new Error("No content from OpenAI");
+
+        return JSON.parse(content) as MatchResult;
+
+    } catch (error) {
+        console.error("OpenAI Match Error:", error);
+        throw new Error("Failed to match resume");
+    }
+}

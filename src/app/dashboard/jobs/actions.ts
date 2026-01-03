@@ -53,3 +53,87 @@ export async function createJobApplication(formData: FormData) {
     revalidatePath('/dashboard/jobs')
     redirect('/dashboard/jobs')
 }
+
+export async function updateJobApplication(formData: FormData) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        throw new Error('Unauthorized')
+    }
+
+    const id = formData.get('id') as string
+    const status = formData.get('status') as string
+    const notes = formData.get('notes') as string
+
+    const { error } = await supabase
+        .from('job_applications')
+        .update({
+            status,
+            notes,
+            updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .eq('user_id', user.id)
+
+    if (error) {
+        console.error('Update Error:', error)
+        throw new Error('Failed to update job application')
+    }
+
+    revalidatePath(`/dashboard/jobs/${id}`)
+    revalidatePath('/dashboard/jobs')
+}
+
+import { matchResumeToJob } from '@/lib/openai'
+
+export async function analyzeJobMatch(jobId: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) throw new Error('Unauthorized')
+
+    // Fetch Job & Linked Resume
+    const { data: job } = await supabase
+        .from('job_applications')
+        .select(`
+            *,
+            resume_version:resume_versions(
+                content
+            )
+        `)
+        .eq('id', jobId)
+        .eq('user_id', user.id)
+        .single()
+
+    if (!job || !job.resume_version) {
+        throw new Error('Job not found or no resume linked')
+    }
+
+    const resumeText = job.resume_version.content?.raw_text || ''
+    const jobDescription = job.notes || ''
+
+    if (!resumeText || !jobDescription) {
+        throw new Error('Resume text or Job Description (notes) is missing')
+    }
+
+    try {
+        const matchResult = await matchResumeToJob(resumeText, jobDescription)
+
+        const { error } = await supabase
+            .from('job_applications')
+            .update({
+                match_score: matchResult.score,
+                match_analysis: matchResult
+            })
+            .eq('id', jobId)
+
+        if (error) throw error
+
+    } catch (e) {
+        console.error("Match Error", e)
+        throw new Error("Failed to analyze match")
+    }
+
+    revalidatePath(`/dashboard/jobs/${jobId}`)
+}
