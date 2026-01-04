@@ -11,13 +11,19 @@ interface DocumentsClientProps {
 export default function DocumentsClient({ documents }: DocumentsClientProps) {
     const [activeTab, setActiveTab] = useState<'all' | 'resume' | 'cover_letter' | 'thank_you'>('all')
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+    const [jobTitleFilter, setJobTitleFilter] = useState<string>('all')
     const [companyFilter, setCompanyFilter] = useState<string>('all')
-    const [deletingDoc, setDeletingDoc] = useState<{ id: string, type: string } | null>(null)
     const [viewingDoc, setViewingDoc] = useState<DocumentItem | null>(null)
+    const [deletingDoc, setDeletingDoc] = useState<{ id: string; type: string } | null>(null)
     const [isDeleting, setIsDeleting] = useState(false)
     const [copied, setCopied] = useState(false)
+    // Extract unique job titles (Global)
+    const jobTitles = useMemo(() => {
+        const unique = new Set(documents.map(d => d.jobTitle).filter(Boolean) as string[])
+        return Array.from(unique).sort()
+    }, [documents])
 
-    // Extract unique companies
+    // Extract unique companies (Global)
     const companies = useMemo(() => {
         const unique = new Set(documents.map(d => d.companyName).filter(Boolean) as string[])
         return Array.from(unique).sort()
@@ -26,13 +32,14 @@ export default function DocumentsClient({ documents }: DocumentsClientProps) {
     const filteredDocs = useMemo(() => {
         return documents
             .filter(doc => activeTab === 'all' || doc.type === activeTab)
+            .filter(doc => jobTitleFilter === 'all' || doc.jobTitle === jobTitleFilter)
             .filter(doc => companyFilter === 'all' || doc.companyName === companyFilter)
             .sort((a, b) => {
                 const dateA = new Date(a.createdAt).getTime()
                 const dateB = new Date(b.createdAt).getTime()
                 return sortOrder === 'asc' ? dateA - dateB : dateB - dateA
             })
-    }, [documents, activeTab, companyFilter, sortOrder])
+    }, [documents, activeTab, jobTitleFilter, companyFilter, sortOrder])
 
     const handleDelete = async () => {
         if (!deletingDoc) return
@@ -88,13 +95,30 @@ export default function DocumentsClient({ documents }: DocumentsClientProps) {
             {docs.map((doc) => (
                 <div key={doc.id} className="bg-white border rounded-lg p-6 hover:shadow-lg transition flex flex-col h-full animate-in fade-in duration-300">
                     <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center">
-                            {getIcon(doc.type)}
-                            <span className="ml-2 font-medium text-gray-900">
-                                {getTypeLabel(doc.type)}
-                            </span>
+                        <div className="flex items-center overflow-hidden">
+                            <div className="flex-shrink-0 mr-3">
+                                {getIcon(doc.type)}
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-500 leading-tight">
+                                    {getTypeLabel(doc.type)}
+                                </span>
+                                <span className="font-medium text-gray-900 truncate text-sm" title={doc.type === 'resume' ? doc.title : (doc.jobTitle || getTypeLabel(doc.type))}>
+                                    {doc.type === 'resume' ? doc.title : (doc.jobTitle || getTypeLabel(doc.type))}
+                                </span>
+                                {doc.type !== 'resume' && doc.companyName && (
+                                    <span className="text-[10px] font-medium text-indigo-500 uppercase tracking-wide truncate mt-0.5">
+                                        {doc.companyName}
+                                    </span>
+                                )}
+                                {doc.type === 'resume' && (
+                                    <span className="text-[10px] font-medium text-indigo-500 uppercase tracking-wide truncate mt-0.5">
+                                        Uploaded Resume
+                                    </span>
+                                )}
+                            </div>
                         </div>
-                        <div className="flex gap-1">
+                        <div className="flex gap-1 flex-shrink-0 ml-2">
                             {doc.content && (
                                 <button
                                     onClick={() => setViewingDoc(doc)}
@@ -114,21 +138,7 @@ export default function DocumentsClient({ documents }: DocumentsClientProps) {
                         </div>
                     </div>
 
-                    {/* Context Header */}
-                    {(doc.companyName || doc.jobTitle) && (
-                        <div className="mb-3 pb-3 border-b border-gray-100">
-                            <h4 className="font-semibold text-gray-800 text-sm">{doc.jobTitle}</h4>
-                            <p className="text-xs text-gray-500">{doc.companyName}</p>
-                        </div>
-                    )}
 
-                    {/* Resume specific display */}
-                    {doc.type === 'resume' && (
-                        <div className="mb-3 pb-3 border-b border-gray-100">
-                            <h4 className="font-semibold text-gray-800 text-sm">{doc.title}</h4>
-                            <p className="text-xs text-gray-500">Uploaded Resume</p>
-                        </div>
-                    )}
 
                     <div className="flex-1">
                         {doc.content && (
@@ -175,9 +185,10 @@ export default function DocumentsClient({ documents }: DocumentsClientProps) {
                             <span className="text-gray-400">File unavailable</span>
                         ) : null}
                     </div>
-                </div>
-            ))}
-        </div>
+                </div >
+            ))
+            }
+        </div >
     )
 
     return (
@@ -225,18 +236,71 @@ export default function DocumentsClient({ documents }: DocumentsClientProps) {
 
             {/* Filters & Controls */}
             <div className="flex flex-col sm:flex-row justify-between items-center bg-gray-50/50 p-2 rounded-lg border border-gray-100">
-                <div className="flex items-center space-x-2 w-full sm:w-auto mb-2 sm:mb-0">
-                    <Filter className="h-4 w-4 text-gray-400 ml-2" />
-                    <select
-                        value={companyFilter}
-                        onChange={(e) => setCompanyFilter(e.target.value)}
-                        className="block w-full sm:w-64 pl-2 pr-10 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 rounded-md bg-white shadow-sm"
-                    >
-                        <option value="all">All Companies</option>
-                        {companies.map(company => (
-                            <option key={company} value={company}>{company}</option>
+                <div className="flex flex-col space-y-4 w-full sm:w-auto mb-4 sm:mb-0 max-w-[70%]">
+                    {/* Job Title Filter */}
+                    <div className="flex items-center space-x-2 overflow-x-auto pb-2 no-scrollbar mask-gradient">
+                        <span className="text-xs font-semibold text-gray-500 mr-2 whitespace-nowrap">Role:</span>
+                        <button
+                            onClick={() => setJobTitleFilter('all')}
+                            className={`
+                                whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium border transition-colors
+                                ${jobTitleFilter === 'all'
+                                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+                                }
+                            `}
+                        >
+                            All Roles
+                        </button>
+                        {jobTitles.map(title => (
+                            <button
+                                key={title}
+                                onClick={() => setJobTitleFilter(title)}
+                                className={`
+                                    whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium border transition-colors max-w-[200px] truncate
+                                    ${jobTitleFilter === title
+                                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+                                    }
+                                `}
+                                title={title}
+                            >
+                                {title}
+                            </button>
                         ))}
-                    </select>
+                    </div>
+
+                    {/* Company Filter */}
+                    <div className="flex items-center space-x-2 overflow-x-auto pb-2 no-scrollbar mask-gradient border-t border-gray-100 pt-2">
+                        <span className="text-xs font-semibold text-gray-500 mr-2 whitespace-nowrap">Company:</span>
+                        <button
+                            onClick={() => setCompanyFilter('all')}
+                            className={`
+                                whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium border transition-colors
+                                ${companyFilter === 'all'
+                                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+                                }
+                            `}
+                        >
+                            All Companies
+                        </button>
+                        {companies.map(company => (
+                            <button
+                                key={company}
+                                onClick={() => setCompanyFilter(company)}
+                                className={`
+                                    whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium border transition-colors
+                                    ${companyFilter === company
+                                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+                                    }
+                                `}
+                            >
+                                {company}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 <div className="flex items-center gap-3 w-full sm:w-auto justify-end px-2">
@@ -249,7 +313,7 @@ export default function DocumentsClient({ documents }: DocumentsClientProps) {
                         className="flex items-center text-sm font-medium text-gray-600 hover:text-indigo-600 transition"
                     >
                         <ArrowUpDown className="h-4 w-4 mr-1.5" />
-                        {sortOrder === 'asc' ? 'Oldest First' : 'Newest First'}
+                        Sort: {sortOrder === 'asc' ? 'Oldest First' : 'Newest First'}
                     </button>
                 </div>
             </div>
@@ -258,20 +322,25 @@ export default function DocumentsClient({ documents }: DocumentsClientProps) {
             {filteredDocs.length > 0 ? (
                 renderDocGrid(filteredDocs)
             ) : (
-                <div className="text-center py-12 bg-white rounded-lg border border-dashed border-gray-300">
-                    <FileText className="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 className="mt-2 text-sm font-semibold text-gray-900">No documents found</h3>
-                    <p className="mt-1 text-sm text-gray-500">
-                        Try adjusting your filters or create a new document.
+                <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-gray-200 shadow-sm animate-in fade-in zoom-in-95 duration-500">
+                    <div className="bg-indigo-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Filter className="h-8 w-8 text-indigo-500" />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">No documents match your filters</h3>
+                    <p className="text-gray-500 max-w-sm mx-auto mb-8">
+                        We couldn't find any documents that match your current selection. Try adjusting the filters or search criteria.
                     </p>
-                    {(activeTab !== 'all' || companyFilter !== 'all') && (
+
+                    {(activeTab !== 'all' || jobTitleFilter !== 'all' || companyFilter !== 'all') && (
                         <button
                             onClick={() => {
                                 setActiveTab('all')
+                                setJobTitleFilter('all')
                                 setCompanyFilter('all')
                             }}
-                            className="mt-4 text-sm text-indigo-600 hover:text-indigo-500"
+                            className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-indigo-600 hover:border-indigo-300 transition-all shadow-sm"
                         >
+                            <X className="h-4 w-4 mr-2 text-gray-400" />
                             Clear all filters
                         </button>
                     )}

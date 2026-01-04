@@ -63,7 +63,10 @@ export async function getDocuments(jobId?: string): Promise<DocumentItem[]> {
     let docQuery = supabase
         .from('documents')
         .select(`
-            *,
+            id,
+            type,
+            content,
+            created_at,
             job_application:job_applications(
                 company_name,
                 job_title
@@ -81,35 +84,51 @@ export async function getDocuments(jobId?: string): Promise<DocumentItem[]> {
     // 2. Fetch Resumes with Text Content
     let resumes: any[] = []
     if (!jobId) {
-        const { data } = await supabase
+        const { data, error } = await supabase
             .from('resumes')
-            .select(`
-                *,
-                current_version:resume_versions!current_version_id(
-                    content
-                )
-            `)
+            .select('*')
             .eq('user_id', user.id)
             .order('created_at', { ascending: false })
+
+        if (error) {
+            console.error('Error fetching resumes:', error)
+        }
         resumes = data || []
     }
 
     // 3. Normalize and Combine
     const unifiedDocs: DocumentItem[] = []
 
-    generatedDocs?.forEach((doc: any) => {
+    generatedDocs?.forEach((doc: any, index: number) => {
+        // Fallback: If date is missing, use current time - index (to ensure sort stability for bulk imports)
+        const fallbackDate = new Date(Date.now() - (index * 1000)).toISOString() // 1 second apart
         unifiedDocs.push({
             id: doc.id,
             type: doc.type,
             content: doc.content,
             companyName: doc.job_application?.company_name,
             jobTitle: doc.job_application?.job_title,
-            createdAt: doc.created_at
+            createdAt: doc.created_at || fallbackDate
         })
     })
 
     const resumePromises = resumes.map(async (resume: any) => {
         let downloadUrl = undefined
+        let content = undefined
+
+        // Fetch the current version content if available
+        if (resume.current_version_id) {
+            const { data: versionData } = await supabase
+                .from('resume_versions')
+                .select('content')
+                .eq('id', resume.current_version_id)
+                .single()
+
+            if (versionData?.content) {
+                content = versionData.content.raw_text || versionData.content.text
+            }
+        }
+
         if (resume.raw_file_path) {
             const { data } = await supabase.storage
                 .from('resumes')
@@ -121,8 +140,8 @@ export async function getDocuments(jobId?: string): Promise<DocumentItem[]> {
             id: resume.id,
             type: 'resume' as const,
             title: resume.title,
-            content: resume.current_version?.content?.text, // Map parsed text
-            createdAt: resume.created_at,
+            content: content,
+            createdAt: resume.created_at || new Date().toISOString(),
             downloadUrl
         }
     })

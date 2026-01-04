@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, ChevronRight, Briefcase, Calendar, Clock } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Briefcase, Calendar, Clock, RefreshCw } from 'lucide-react'
 import { updateJobApplication, analyzeJobMatch, generateQuestions } from '../actions'
 import LinkedResumeSelector from './LinkedResumeSelector'
 import GenerateDocButton from './GenerateDocButton'
@@ -301,6 +301,19 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
                                             </details>
                                         </div>
                                     ))}
+
+                                    <div className="flex justify-end pt-2">
+                                        <button
+                                            formAction={async () => {
+                                                'use server'
+                                                await generateQuestions(job.id)
+                                            }}
+                                            className="text-sm text-purple-600 hover:text-purple-800 hover:underline flex items-center bg-transparent transition"
+                                        >
+                                            <RefreshCw className="h-4 w-4 mr-1.5" />
+                                            Regenerate Questions
+                                        </button>
+                                    </div>
                                 </div>
                             )}
                         </div>

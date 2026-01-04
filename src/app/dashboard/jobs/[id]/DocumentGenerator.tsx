@@ -59,154 +59,171 @@ export default function DocumentGenerator({ jobId, jobTitle, companyName, resume
     }
 
     return (
-        <div className="fixed inset-0 z-50 overflow-hidden">
+        <div className="fixed inset-0 z-50 overflow-hidden text-left">
             <div
-                className="absolute inset-0 bg-gray-900/50 backdrop-blur-sm transition-opacity"
+                className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity"
                 onClick={onClose}
             />
-            <div className="fixed inset-y-0 right-0 flex max-w-full pl-10 pointer-events-none">
-                <div className="w-screen max-w-2xl transform transition ease-in-out duration-500 sm:duration-700 bg-white shadow-xl flex flex-col h-full pointer-events-auto">
+            <div className="fixed inset-y-0 right-0 flex pl-10 pointer-events-none">
+                <div className="w-screen max-w-2xl md:min-w-[40vw] md:max-w-[40vw] transform transition ease-in-out duration-500 bg-white shadow-2xl flex flex-col h-full pointer-events-auto border-l border-gray-100">
                     {/* Header */}
-                    <div className="px-6 py-6 border-b flex justify-between items-start bg-gray-50">
+                    <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-start bg-white sticky top-0 z-10">
                         <div>
-                            <h2 className="text-2xl font-bold text-gray-900">Generate Document</h2>
-                            <p className="text-sm text-gray-600 mt-1">{jobTitle} at {companyName}</p>
+                            <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Generate Document</h2>
+                            <p className="text-sm text-gray-500 mt-1 font-medium">{jobTitle} @ {companyName}</p>
                             {resumeTitle && (
-                                <div className="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                                    <FileText className="w-3 h-3 mr-1" />
+                                <div className="mt-3 inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                    <FileText className="w-3 h-3 mr-1.5" />
                                     Using: {resumeTitle}
                                 </div>
                             )}
                         </div>
                         <button
                             onClick={onClose}
-                            className="text-gray-400 hover:text-gray-600 transition"
+                            className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-full transition"
                         >
-                            <X className="h-6 w-6" />
+                            <X className="h-5 w-5" />
                         </button>
                     </div>
 
-                    {/* Tabs */}
-                    <div className="flex border-b px-6">
-                        <button
-                            onClick={() => {
-                                setActiveTab('cover_letter')
-                                setGeneratedContent('')
-                                setSaved(false)
-                            }}
-                            className={`flex items-center px-4 py-3 text-sm font-medium border-b-2 transition ${activeTab === 'cover_letter'
-                                ? 'border-indigo-600 text-indigo-600'
-                                : 'border-transparent text-gray-500 hover:text-gray-700'
-                                }`}
-                        >
-                            <FileText className="h-4 w-4 mr-2" />
-                            Cover Letter
-                        </button>
-                        <button
-                            onClick={() => {
-                                setActiveTab('thank_you')
-                                setGeneratedContent('')
-                                setSaved(false)
-                            }}
-                            className={`flex items-center px-4 py-3 text-sm font-medium border-b-2 transition ${activeTab === 'thank_you'
-                                ? 'border-indigo-600 text-indigo-600'
-                                : 'border-transparent text-gray-500 hover:text-gray-700'
-                                }`}
-                        >
-                            <Mail className="h-4 w-4 mr-2" />
-                            Thank-You Email
-                        </button>
+                    {/* Tabs - Segmented Control Style */}
+                    <div className="px-8 pt-6 pb-2">
+                        <div className="flex bg-gray-100/80 p-1 rounded-lg">
+                            <button
+                                onClick={() => {
+                                    setActiveTab('cover_letter')
+                                    setGeneratedContent('')
+                                    setSaved(false)
+                                }}
+                                className={`flex-1 flex items-center justify-center px-4 py-2.5 text-sm font-semibold rounded-md transition-all duration-200 ${activeTab === 'cover_letter'
+                                    ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-black/5'
+                                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+                                    }`}
+                            >
+                                <FileText className="h-4 w-4 mr-2" />
+                                Cover Letter
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setActiveTab('thank_you')
+                                    setGeneratedContent('')
+                                    setSaved(false)
+                                }}
+                                className={`flex-1 flex items-center justify-center px-4 py-2.5 text-sm font-semibold rounded-md transition-all duration-200 ${activeTab === 'thank_you'
+                                    ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-black/5'
+                                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+                                    }`}
+                            >
+                                <Mail className="h-4 w-4 mr-2" />
+                                Thank-You Email
+                            </button>
+                        </div>
                     </div>
 
                     {/* Content */}
-                    <div className="flex-1 overflow-y-auto p-6">
+                    <div className="flex-1 overflow-y-auto p-8 scroll-smooth">
                         {!generatedContent ? (
-                            <div className="space-y-4">
+                            <div className="space-y-6">
                                 {activeTab === 'thank_you' && (
-                                    <>
+                                    <div className="space-y-5 animate-in slide-in-from-bottom-2 duration-300">
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
                                                 Interviewer Name
                                             </label>
                                             <input
                                                 type="text"
                                                 value={interviewerName}
                                                 onChange={(e) => setInterviewerName(e.target.value)}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                                                placeholder="John Smith"
+                                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition shadow-sm placeholder:text-gray-400"
+                                                placeholder="e.g. John Smith"
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
                                                 Interview Date
                                             </label>
                                             <input
                                                 type="date"
                                                 value={interviewDate}
                                                 onChange={(e) => setInterviewDate(e.target.value)}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition shadow-sm text-gray-600"
                                             />
                                         </div>
-                                    </>
+                                    </div>
                                 )}
 
-                                <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
-                                    <p className="text-sm text-indigo-900">
-                                        {activeTab === 'cover_letter'
-                                            ? 'Click "Generate" to create a personalized cover letter based on your resume and this job description.'
-                                            : 'Fill in the details above and click "Generate" to create a professional thank-you email.'}
-                                    </p>
+                                <div className="bg-gradient-to-br from-indigo-50 to-white border border-indigo-100 rounded-xl p-6 shadow-sm">
+                                    <div className="flex items-start">
+                                        <div className="bg-indigo-100 p-2 rounded-lg mr-4 text-indigo-600">
+                                            {activeTab === 'cover_letter' ? <FileText className="h-5 w-5" /> : <Mail className="h-5 w-5" />}
+                                        </div>
+                                        <div>
+                                            <h4 className="text-sm font-bold text-indigo-900 mb-1">
+                                                Ready to Generate
+                                            </h4>
+                                            <p className="text-sm text-indigo-700 leading-relaxed">
+                                                {activeTab === 'cover_letter'
+                                                    ? 'Our AI will analyze your resume and the job description to craft a compelling, personalized cover letter.'
+                                                    : 'Fill in the details above and let AI draft a professional, polite thank-you email for your interviewer.'}
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <button
                                     onClick={handleGenerate}
                                     disabled={isPending || (activeTab === 'thank_you' && (!interviewerName || !interviewDate))}
-                                    className="w-full flex items-center justify-center px-4 py-3 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="w-full relative group overflow-hidden flex items-center justify-center px-6 py-4 bg-indigo-600 text-white rounded-xl font-semibold shadow-lg shadow-indigo-200 hover:shadow-xl hover:shadow-indigo-300 transition-all disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed hover:-translate-y-0.5"
                                 >
-                                    {isPending ? (
-                                        <>
-                                            <Loader2 className="animate-spin -ml-1 mr-2 h-5 w-5" />
-                                            Generating...
-                                        </>
-                                    ) : (
-                                        'Generate'
-                                    )}
+                                    <span className="relative z-10 flex items-center">
+                                        {isPending ? (
+                                            <>
+                                                <Loader2 className="animate-spin -ml-1 mr-2 h-5 w-5" />
+                                                Generating Magic...
+                                            </>
+                                        ) : (
+                                            `Generate ${activeTab === 'cover_letter' ? 'Cover Letter' : 'Email'}`
+                                        )}
+                                    </span>
                                 </button>
                             </div>
                         ) : (
-                            <div className="space-y-4">
-                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
-                                    <pre className="whitespace-pre-wrap font-sans text-sm text-gray-800 leading-relaxed">
+                            <div className="space-y-6 h-full flex flex-col animate-in fade-in duration-500">
+                                <div className="flex-1 bg-gray-50 border border-gray-200 rounded-xl p-6 shadow-inner overflow-auto h-full min-h-[400px]">
+                                    <pre className="whitespace-pre-wrap font-sans text-sm text-gray-800 leading-relaxed max-w-none">
                                         {generatedContent}
                                     </pre>
                                 </div>
 
-                                <div className="flex gap-3">
+                                <div className="flex flex-col sm:flex-row gap-3 pt-2">
                                     <button
                                         onClick={handleCopy}
-                                        className="flex-1 flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition"
+                                        className="flex-1 flex items-center justify-center px-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-700 font-medium hover:bg-gray-50 hover:border-gray-300 transition shadow-sm"
                                     >
                                         {copied ? (
                                             <>
                                                 <Check className="h-4 w-4 mr-2 text-green-600" />
-                                                Copied!
+                                                <span className="text-green-700">Copied!</span>
                                             </>
                                         ) : (
                                             <>
-                                                <Copy className="h-4 w-4 mr-2" />
-                                                Copy to Clipboard
+                                                <Copy className="h-4 w-4 mr-2 text-gray-500" />
+                                                Copy Text
                                             </>
                                         )}
                                     </button>
                                     <button
                                         onClick={handleSave}
                                         disabled={isPending || saved}
-                                        className="flex-1 flex items-center justify-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition disabled:opacity-50"
+                                        className={`flex-1 flex items-center justify-center px-4 py-3 rounded-lg font-medium text-white transition shadow-sm ${saved
+                                            ? 'bg-green-600 hover:bg-green-700'
+                                            : 'bg-indigo-600 hover:bg-indigo-700'
+                                            } disabled:opacity-75`}
                                     >
                                         {saved ? (
                                             <>
                                                 <Check className="h-4 w-4 mr-2" />
-                                                Saved!
+                                                Saved to Docs
                                             </>
                                         ) : (
                                             'Save Document'
@@ -214,7 +231,7 @@ export default function DocumentGenerator({ jobId, jobTitle, companyName, resume
                                     </button>
                                     <button
                                         onClick={() => setGeneratedContent('')}
-                                        className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition"
+                                        className="px-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-700 font-medium hover:bg-gray-50 hover:text-indigo-600 transition shadow-sm"
                                     >
                                         Regenerate
                                     </button>
