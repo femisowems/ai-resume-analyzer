@@ -8,9 +8,10 @@ interface GenerateDocButtonProps {
     jobId: string
     jobTitle: string
     companyName: string
+    resumeTitle?: string
 }
 
-export default function GenerateDocButton({ jobId, jobTitle, companyName }: GenerateDocButtonProps) {
+export default function GenerateDocButton({ jobId, jobTitle, companyName, resumeTitle }: GenerateDocButtonProps) {
     const [showModal, setShowModal] = useState(false)
 
     return (
@@ -28,6 +29,7 @@ export default function GenerateDocButton({ jobId, jobTitle, companyName }: Gene
                     jobId={jobId}
                     jobTitle={jobTitle}
                     companyName={companyName}
+                    resumeTitle={resumeTitle}
                     onClose={() => setShowModal(false)}
                 />
             )}

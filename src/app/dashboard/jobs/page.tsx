@@ -12,7 +12,14 @@ export default async function JobsPage() {
 
     const { data: jobs } = await supabase
         .from('job_applications')
-        .select('*')
+        .select(`
+            *,
+            resume_version:resume_versions(
+                resume:resumes(
+                    title
+                )
+            )
+        `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
 

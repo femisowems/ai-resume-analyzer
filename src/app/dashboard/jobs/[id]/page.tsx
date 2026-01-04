@@ -172,6 +172,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
                                     jobId={job.id}
                                     jobTitle={job.job_title}
                                     companyName={job.company_name}
+                                    resumeTitle={job.resume_version?.resume?.title}
                                 />
                             </div>
                         </div>

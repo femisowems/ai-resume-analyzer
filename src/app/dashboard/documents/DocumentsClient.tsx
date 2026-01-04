@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { FileText, Mail, Linkedin, Trash2, LayoutGrid, AlertTriangle } from 'lucide-react'
+import { useState, useMemo } from 'react'
+import { FileText, Mail, Linkedin, Trash2, LayoutGrid, AlertTriangle, Eye, X, Copy, Check, ArrowUpDown, Filter } from 'lucide-react'
 import { DocumentItem, deleteDocument } from './actions'
 
 interface DocumentsClientProps {
@@ -10,12 +10,29 @@ interface DocumentsClientProps {
 
 export default function DocumentsClient({ documents }: DocumentsClientProps) {
     const [activeTab, setActiveTab] = useState<'all' | 'resume' | 'cover_letter' | 'thank_you'>('all')
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+    const [companyFilter, setCompanyFilter] = useState<string>('all')
     const [deletingDoc, setDeletingDoc] = useState<{ id: string, type: string } | null>(null)
+    const [viewingDoc, setViewingDoc] = useState<DocumentItem | null>(null)
     const [isDeleting, setIsDeleting] = useState(false)
+    const [copied, setCopied] = useState(false)
 
-    const filteredDocs = activeTab === 'all'
-        ? documents
-        : documents.filter(doc => doc.type === activeTab)
+    // Extract unique companies
+    const companies = useMemo(() => {
+        const unique = new Set(documents.map(d => d.companyName).filter(Boolean) as string[])
+        return Array.from(unique).sort()
+    }, [documents])
+
+    const filteredDocs = useMemo(() => {
+        return documents
+            .filter(doc => activeTab === 'all' || doc.type === activeTab)
+            .filter(doc => companyFilter === 'all' || doc.companyName === companyFilter)
+            .sort((a, b) => {
+                const dateA = new Date(a.createdAt).getTime()
+                const dateB = new Date(b.createdAt).getTime()
+                return sortOrder === 'asc' ? dateA - dateB : dateB - dateA
+            })
+    }, [documents, activeTab, companyFilter, sortOrder])
 
     const handleDelete = async () => {
         if (!deletingDoc) return
@@ -29,6 +46,13 @@ export default function DocumentsClient({ documents }: DocumentsClientProps) {
         } finally {
             setIsDeleting(false)
         }
+    }
+
+    const handleCopy = () => {
+        if (!viewingDoc?.content) return
+        navigator.clipboard.writeText(viewingDoc.content)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
     }
 
     const getIcon = (type: string) => {
@@ -70,13 +94,24 @@ export default function DocumentsClient({ documents }: DocumentsClientProps) {
                                 {getTypeLabel(doc.type)}
                             </span>
                         </div>
-                        <button
-                            onClick={() => setDeletingDoc({ id: doc.id, type: doc.type })}
-                            className="text-gray-400 hover:text-red-600 transition p-1"
-                            title="Delete"
-                        >
-                            <Trash2 className="h-4 w-4" />
-                        </button>
+                        <div className="flex gap-1">
+                            {doc.content && (
+                                <button
+                                    onClick={() => setViewingDoc(doc)}
+                                    className="text-gray-400 hover:text-indigo-600 transition p-1"
+                                    title="View"
+                                >
+                                    <Eye className="h-4 w-4" />
+                                </button>
+                            )}
+                            <button
+                                onClick={() => setDeletingDoc({ id: doc.id, type: doc.type })}
+                                className="text-gray-400 hover:text-red-600 transition p-1"
+                                title="Delete"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </button>
+                        </div>
                     </div>
 
                     {/* Context Header */}
@@ -97,11 +132,19 @@ export default function DocumentsClient({ documents }: DocumentsClientProps) {
 
                     <div className="flex-1">
                         {doc.content && (
-                            <p className="text-sm text-gray-600 line-clamp-4 leading-relaxed bg-gray-50 p-3 rounded border border-gray-100 mb-4 font-mono text-xs">
-                                {doc.content}
-                            </p>
+                            <div
+                                className="relative group cursor-pointer"
+                                onClick={() => setViewingDoc(doc)}
+                            >
+                                <p className="text-sm text-gray-600 line-clamp-4 leading-relaxed bg-gray-50 p-3 rounded border border-gray-100 mb-4 font-mono text-xs hover:bg-gray-100 transition-colors">
+                                    {doc.content}
+                                </p>
+                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900/5 rounded pointer-events-none">
+                                    <span className="bg-white px-2 py-1 rounded shadow text-xs font-medium text-gray-700">Click to view</span>
+                                </div>
+                            </div>
                         )}
-                        {doc.type === 'resume' && (
+                        {doc.type === 'resume' && !doc.content && (
                             <div className="bg-gray-50 p-3 rounded border border-gray-100 mb-4 flex items-center justify-center h-24 text-gray-400">
                                 <FileText className="h-8 w-8 opacity-20" />
                             </div>
@@ -109,7 +152,15 @@ export default function DocumentsClient({ documents }: DocumentsClientProps) {
                     </div>
 
                     <div className="text-xs text-gray-400 mt-auto pt-3 flex justify-between items-center border-t border-gray-50">
-                        <span>{new Date(doc.createdAt).toLocaleDateString()}</span>
+                        <span>
+                            {doc.createdAt
+                                ? new Date(doc.createdAt).toLocaleDateString(undefined, {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric'
+                                })
+                                : 'Date available'}
+                        </span>
                         {doc.type === 'resume' && doc.downloadUrl ? (
                             <a
                                 href={doc.downloadUrl}
@@ -136,9 +187,9 @@ export default function DocumentsClient({ documents }: DocumentsClientProps) {
                 <nav className="-mb-px flex space-x-8" aria-label="Tabs">
                     {[
                         { id: 'all', label: 'All Documents', icon: LayoutGrid },
-                        { id: 'resume', label: 'Resumes', icon: FileText },
                         { id: 'cover_letter', label: 'Cover Letters', icon: FileText },
                         { id: 'thank_you', label: 'Thank You Emails', icon: Mail },
+                        { id: 'resume', label: 'Resumes', icon: FileText },
                     ].map((tab) => {
                         const Icon = tab.icon
                         return (
@@ -172,6 +223,37 @@ export default function DocumentsClient({ documents }: DocumentsClientProps) {
                 </nav>
             </div>
 
+            {/* Filters & Controls */}
+            <div className="flex flex-col sm:flex-row justify-between items-center bg-gray-50/50 p-2 rounded-lg border border-gray-100">
+                <div className="flex items-center space-x-2 w-full sm:w-auto mb-2 sm:mb-0">
+                    <Filter className="h-4 w-4 text-gray-400 ml-2" />
+                    <select
+                        value={companyFilter}
+                        onChange={(e) => setCompanyFilter(e.target.value)}
+                        className="block w-full sm:w-64 pl-2 pr-10 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 rounded-md bg-white shadow-sm"
+                    >
+                        <option value="all">All Companies</option>
+                        {companies.map(company => (
+                            <option key={company} value={company}>{company}</option>
+                        ))}
+                    </select>
+                </div>
+
+                <div className="flex items-center gap-3 w-full sm:w-auto justify-end px-2">
+                    <span className="text-xs text-gray-500 font-medium">
+                        {filteredDocs.length} result{filteredDocs.length !== 1 ? 's' : ''}
+                    </span>
+                    <div className="h-4 w-px bg-gray-200" />
+                    <button
+                        onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                        className="flex items-center text-sm font-medium text-gray-600 hover:text-indigo-600 transition"
+                    >
+                        <ArrowUpDown className="h-4 w-4 mr-1.5" />
+                        {sortOrder === 'asc' ? 'Oldest First' : 'Newest First'}
+                    </button>
+                </div>
+            </div>
+
             {/* Content */}
             {filteredDocs.length > 0 ? (
                 renderDocGrid(filteredDocs)
@@ -180,10 +262,86 @@ export default function DocumentsClient({ documents }: DocumentsClientProps) {
                     <FileText className="mx-auto h-12 w-12 text-gray-400" />
                     <h3 className="mt-2 text-sm font-semibold text-gray-900">No documents found</h3>
                     <p className="mt-1 text-sm text-gray-500">
-                        {activeTab === 'all'
-                            ? 'Get started by creating a document from your jobs.'
-                            : `No ${activeTab.replace('_', ' ')}s found.`}
+                        Try adjusting your filters or create a new document.
                     </p>
+                    {(activeTab !== 'all' || companyFilter !== 'all') && (
+                        <button
+                            onClick={() => {
+                                setActiveTab('all')
+                                setCompanyFilter('all')
+                            }}
+                            className="mt-4 text-sm text-indigo-600 hover:text-indigo-500"
+                        >
+                            Clear all filters
+                        </button>
+                    )}
+                </div>
+            )}
+
+            {/* View Modal */}
+            {viewingDoc && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+                    <div
+                        className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm transition-opacity"
+                        onClick={() => setViewingDoc(null)}
+                    />
+                    <div className="relative w-full max-w-2xl bg-white rounded-xl shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
+                        {/* Modal Header */}
+                        <div className="flex items-center justify-between px-6 py-4 border-b">
+                            <div>
+                                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                                    {getIcon(viewingDoc.type)}
+                                    {getTypeLabel(viewingDoc.type)}
+                                </h3>
+                                {(viewingDoc.companyName || viewingDoc.jobTitle) && (
+                                    <p className="text-sm text-gray-500 mt-1">
+                                        {viewingDoc.jobTitle} • {viewingDoc.companyName}
+                                    </p>
+                                )}
+                            </div>
+                            <button
+                                onClick={() => setViewingDoc(null)}
+                                className="text-gray-400 hover:text-gray-600 transition"
+                            >
+                                <X className="h-6 w-6" />
+                            </button>
+                        </div>
+
+                        {/* Modal Content */}
+                        <div className="p-6 overflow-y-auto flex-1">
+                            <div className="bg-gray-50 rounded-lg p-6 border border-gray-100">
+                                <pre className="whitespace-pre-wrap font-sans text-sm text-gray-800 leading-relaxed">
+                                    {viewingDoc.content}
+                                </pre>
+                            </div>
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50 rounded-b-xl">
+                            <button
+                                onClick={handleCopy}
+                                className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition shadow-sm"
+                            >
+                                {copied ? (
+                                    <>
+                                        <Check className="h-4 w-4 mr-2 text-green-600" />
+                                        Copied
+                                    </>
+                                ) : (
+                                    <>
+                                        <Copy className="h-4 w-4 mr-2" />
+                                        Copy Text
+                                    </>
+                                )}
+                            </button>
+                            <button
+                                onClick={() => setViewingDoc(null)}
+                                className="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 transition shadow-sm"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
 

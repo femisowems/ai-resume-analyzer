@@ -164,7 +164,9 @@ export async function generateCoverLetter(
     resumeText: string,
     jobTitle: string,
     companyName: string,
-    jobDescription: string
+    jobDescription: string,
+    currentDateStr: string = new Date().toLocaleDateString(),
+    additionalContext?: string
 ): Promise<string> {
     try {
         const completion = await openai.chat.completions.create({
@@ -174,15 +176,26 @@ export async function generateCoverLetter(
                     role: "system",
                     content: `You are a professional career coach helping write compelling cover letters. 
 Generate a personalized, professional cover letter that:
-- **Use the Candidate's Details**: Extract the candidate's Name, Email, and Phone directly from the provided Resume text. Use these for the header and sign-off.
-- Highlights relevant experience from the resume
-- Shows enthusiasm for the specific role and company
-- Demonstrates understanding of the job requirements
-- Uses a professional yet warm tone
-- Is 3-4 paragraphs long
-- Avoids generic phrases
+- **STRICTLY FOLLOW THIS HEADER FORMAT** (REPLACE bracketed text with actual data extracted from Resume. Do NOT output the brackets):
+  [Candidate Name from Resume]
+  [Candidate Email from Resume]
+  [Candidate Phone from Resume]
+  ${currentDateStr}
 
-Return ONLY the cover letter text. Start with the header (Name/Contact) if possible, or standard business letter format.`
+  [Hiring Manager Name (if unknown use 'Hiring Manager')]
+  ${companyName}
+  [Company Address (if unknown use 'Headquarters')]
+
+- **Body Content**:
+  - Highlights relevant experience from the resume, specifically mentioning METRICS and ACHIEVEMENTS (e.g. "Increased revenue by 20%")
+  - Shows enthusiasm for the specific role and company
+  - Demonstrates understanding of the job requirements
+  - Uses a professional yet warm tone
+  - Is 3-4 paragraphs long
+  - Avoids generic phrases
+  ${additionalContext ? `- **IMPORTANT NOTE**: The candidate has provided specific notes/context for this application. You MUST incorporate the following instructions/details into the letter: "${additionalContext}"` : ''}
+
+Return ONLY the cover letter text starting with the header.`
                 },
                 {
                     role: "user",
@@ -204,9 +217,11 @@ export async function generateThankYouEmail(
     jobTitle: string,
     companyName: string,
     interviewerName: string,
-    interviewDate: string
+    interviewDate: string,
+    additionalContext?: string
 ): Promise<string> {
     try {
+        const currentDateStr = new Date().toLocaleDateString()
         const completion = await openai.chat.completions.create({
             model: "gpt-4o",
             messages: [
@@ -214,14 +229,25 @@ export async function generateThankYouEmail(
                     role: "system",
                     content: `You are a professional career coach helping write post-interview thank-you emails.
 Generate a professional, concise thank-you email that:
-- **Sign-off**: Sign off with the candidate's full name extracted from the Resume.
-- Thanks the interviewer for their time
-- Reiterates interest in the position
-- Mentions a specific topic discussed (if generic, use "our conversation about the role")
-- Keeps it brief (2-3 short paragraphs)
-- Ends with a professional closing
+- **STRICTLY FOLLOW THIS HEADER FORMAT** (REPLACE bracketed text with actual data extracted from Resume. Do NOT output the brackets):
+  [Candidate Name from Resume]
+  [Candidate Email from Resume]
+  [Candidate Phone from Resume]
+  ${currentDateStr}
 
-Return ONLY the email body text, no subject line, no additional formatting.`
+  ${interviewerName}
+  ${companyName}
+  [Company Address (if unknown use 'Headquarters')]
+
+- **Body Content**:
+  - Thanks the interviewer for their time
+  - Reiterates interest in the position
+  - Mentions a specific topic discussed (if generic, use "our conversation about the role")
+  - Keeps it brief (2-3 short paragraphs)
+  - Ends with a professional closing
+  ${additionalContext ? `- **IMPORTANT NOTE**: The candidate has provided specific notes/context for this email. You MUST incorporate the following instructions/details: "${additionalContext}"` : ''}
+
+Return ONLY the email body text.`
                 },
                 {
                     role: "user",

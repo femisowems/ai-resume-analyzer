@@ -8,11 +8,12 @@ interface DocumentGeneratorProps {
     jobId: string
     jobTitle: string
     companyName: string
+    resumeTitle?: string
     initialTab?: 'cover_letter' | 'thank_you'
     onClose: () => void
 }
 
-export default function DocumentGenerator({ jobId, jobTitle, companyName, initialTab = 'cover_letter', onClose }: DocumentGeneratorProps) {
+export default function DocumentGenerator({ jobId, jobTitle, companyName, resumeTitle, initialTab = 'cover_letter', onClose }: DocumentGeneratorProps) {
     const [activeTab, setActiveTab] = useState<'cover_letter' | 'thank_you'>(initialTab)
     const [isPending, startTransition] = useTransition()
     const [generatedContent, setGeneratedContent] = useState<string>('')
@@ -70,6 +71,12 @@ export default function DocumentGenerator({ jobId, jobTitle, companyName, initia
                         <div>
                             <h2 className="text-2xl font-bold text-gray-900">Generate Document</h2>
                             <p className="text-sm text-gray-600 mt-1">{jobTitle} at {companyName}</p>
+                            {resumeTitle && (
+                                <div className="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                                    <FileText className="w-3 h-3 mr-1" />
+                                    Using: {resumeTitle}
+                                </div>
+                            )}
                         </div>
                         <button
                             onClick={onClose}
@@ -82,7 +89,11 @@ export default function DocumentGenerator({ jobId, jobTitle, companyName, initia
                     {/* Tabs */}
                     <div className="flex border-b px-6">
                         <button
-                            onClick={() => setActiveTab('cover_letter')}
+                            onClick={() => {
+                                setActiveTab('cover_letter')
+                                setGeneratedContent('')
+                                setSaved(false)
+                            }}
                             className={`flex items-center px-4 py-3 text-sm font-medium border-b-2 transition ${activeTab === 'cover_letter'
                                 ? 'border-indigo-600 text-indigo-600'
                                 : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -92,7 +103,11 @@ export default function DocumentGenerator({ jobId, jobTitle, companyName, initia
                             Cover Letter
                         </button>
                         <button
-                            onClick={() => setActiveTab('thank_you')}
+                            onClick={() => {
+                                setActiveTab('thank_you')
+                                setGeneratedContent('')
+                                setSaved(false)
+                            }}
                             className={`flex items-center px-4 py-3 text-sm font-medium border-b-2 transition ${activeTab === 'thank_you'
                                 ? 'border-indigo-600 text-indigo-600'
                                 : 'border-transparent text-gray-500 hover:text-gray-700'

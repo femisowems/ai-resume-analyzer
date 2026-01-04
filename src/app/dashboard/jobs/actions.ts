@@ -126,11 +126,15 @@ export async function analyzeJobMatch(jobId: string) {
         throw new Error('Job not found or no resume linked')
     }
 
-    const resumeText = job.resume_version.content?.raw_text || ''
-    const jobDescription = job.notes || ''
+    const content = job.resume_version.content || {}
+    const resumeText = content.text || content.raw_text || ''
+    const jobDescription = job.job_description || job.notes || ''
 
-    if (!resumeText || !jobDescription) {
-        throw new Error('Resume text or Job Description (notes) is missing')
+    if (!resumeText) {
+        throw new Error('Resume text is missing. Please check if the resume was parsed correctly.')
+    }
+    if (!jobDescription) {
+        throw new Error('Job Description is missing. Please add a description or notes to the job.')
     }
 
     try {
@@ -174,10 +178,13 @@ export async function generateQuestions(jobId: string) {
     // Check if questions already exist to avoid re-generating (optional check, but good for cost)
     // if (job.interview_questions) return; 
 
-    const resumeText = job.resume_version.content?.raw_text || ''
-    const jobDescription = job.notes || ''
+    // Use job.notes as description since we use that for context
+    const content = job.resume_version.content || {}
+    const resumeText = content.text || content.raw_text || ''
+    const jobDescription = job.job_description || job.notes || ''
 
-    if (!resumeText || !jobDescription) throw new Error('Missing content for generation')
+    if (!resumeText) throw new Error('Resume text is missing')
+    if (!jobDescription) throw new Error('Job description is missing')
 
     try {
         const questions = await generateInterviewQuestions(resumeText, jobDescription)

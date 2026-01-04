@@ -13,6 +13,11 @@ type Job = {
     status: string
     applied_date: string | null
     updated_at: string | null
+    resume_version?: {
+        resume?: {
+            title: string
+        }
+    }
 }
 
 const STATUS_COLUMNS = [
@@ -226,6 +231,7 @@ export default function JobBoard({ initialJobs }: { initialJobs: Job[] }) {
                     jobId={selectedJob.id}
                     jobTitle={selectedJob.job_title}
                     companyName={selectedJob.company_name}
+                    resumeTitle={selectedJob.resume_version?.resume?.title}
                     initialTab={docType}
                     onClose={() => setShowModal(false)}
                 />

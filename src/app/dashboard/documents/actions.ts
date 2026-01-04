@@ -78,13 +78,17 @@ export async function getDocuments(jobId?: string): Promise<DocumentItem[]> {
 
     const { data: generatedDocs } = await docQuery
 
-    // 2. Fetch Resumes (only if no jobId is specified, or if we want to show resumes related to a job - but resumes aren't strictly 1:1 with jobs in this schema easily without join. 
-    // For now, let's only show resumes if NO jobId is passed, i.e., the main documents list)
+    // 2. Fetch Resumes with Text Content
     let resumes: any[] = []
     if (!jobId) {
         const { data } = await supabase
             .from('resumes')
-            .select('*')
+            .select(`
+                *,
+                current_version:resume_versions!current_version_id(
+                    content
+                )
+            `)
             .eq('user_id', user.id)
             .order('created_at', { ascending: false })
         resumes = data || []
@@ -117,6 +121,7 @@ export async function getDocuments(jobId?: string): Promise<DocumentItem[]> {
             id: resume.id,
             type: 'resume' as const,
             title: resume.title,
+            content: resume.current_version?.content?.text, // Map parsed text
             createdAt: resume.created_at,
             downloadUrl
         }
@@ -200,12 +205,20 @@ export async function generateCoverLetterAction(jobId: string) {
         throw new Error('Job or resume not found')
     }
 
-    const resumeText = job.resume_version.content?.text || ''
+    const content = job.resume_version.content || {}
+    const resumeText = content.text || content.raw_text || ''
+
+    if (!resumeText) {
+        throw new Error('Resume text is missing. Please check your resume.')
+    }
+
     const coverLetter = await generateCoverLetter(
         resumeText,
         job.job_title,
         job.company_name,
-        job.job_description || ''
+        job.job_description || '',
+        new Date().toLocaleDateString(),
+        job.notes // Pass additional context
     )
 
     return coverLetter
@@ -233,14 +246,20 @@ export async function generateThankYouAction(
         throw new Error('Job or resume not found')
     }
 
-    const resumeText = job.resume_version.content?.text || ''
+    const content = job.resume_version.content || {}
+    const resumeText = content.text || content.raw_text || ''
+
+    if (!resumeText) {
+        throw new Error('Resume text is missing. Please check your resume.')
+    }
 
     const thankYou = await generateThankYouEmail(
         resumeText,
         job.job_title,
         job.company_name,
         interviewerName,
-        interviewDate
+        interviewDate,
+        job.notes // Pass additional context
     )
 
     return thankYou
