@@ -147,15 +147,132 @@ export async function generateInterviewQuestions(resumeText: string, jobDescript
             ],
             response_format: { type: "json_object" },
             temperature: 0.7,
-        });
+        })
 
-        const content = completion.choices[0].message.content;
-        if (!content) throw new Error("No content");
+        const content = completion.choices[0].message.content
+        if (!content) throw new Error("No content")
 
-        const result = JSON.parse(content);
-        return result.questions;
+        const result = JSON.parse(content)
+        return result.questions
     } catch (e) {
-        console.error("Interview Gen Error", e);
-        throw new Error("Failed to generate questions");
+        console.error("Interview Gen Error", e)
+        throw new Error("Failed to generate questions")
+    }
+}
+
+export async function generateCoverLetter(
+    resumeText: string,
+    jobTitle: string,
+    companyName: string,
+    jobDescription: string
+): Promise<string> {
+    try {
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4o",
+            messages: [
+                {
+                    role: "system",
+                    content: `You are a professional career coach helping write compelling cover letters. 
+Generate a personalized, professional cover letter that:
+- **Use the Candidate's Details**: Extract the candidate's Name, Email, and Phone directly from the provided Resume text. Use these for the header and sign-off.
+- Highlights relevant experience from the resume
+- Shows enthusiasm for the specific role and company
+- Demonstrates understanding of the job requirements
+- Uses a professional yet warm tone
+- Is 3-4 paragraphs long
+- Avoids generic phrases
+
+Return ONLY the cover letter text. Start with the header (Name/Contact) if possible, or standard business letter format.`
+                },
+                {
+                    role: "user",
+                    content: `Resume:\n${resumeText}\n\nJob Title: ${jobTitle}\nCompany: ${companyName}\nJob Description:\n${jobDescription}`
+                }
+            ],
+            temperature: 0.7,
+        })
+
+        return completion.choices[0].message.content || ""
+    } catch (e) {
+        console.error("Cover Letter Gen Error", e)
+        throw new Error("Failed to generate cover letter")
+    }
+}
+
+export async function generateThankYouEmail(
+    resumeText: string,
+    jobTitle: string,
+    companyName: string,
+    interviewerName: string,
+    interviewDate: string
+): Promise<string> {
+    try {
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4o",
+            messages: [
+                {
+                    role: "system",
+                    content: `You are a professional career coach helping write post-interview thank-you emails.
+Generate a professional, concise thank-you email that:
+- **Sign-off**: Sign off with the candidate's full name extracted from the Resume.
+- Thanks the interviewer for their time
+- Reiterates interest in the position
+- Mentions a specific topic discussed (if generic, use "our conversation about the role")
+- Keeps it brief (2-3 short paragraphs)
+- Ends with a professional closing
+
+Return ONLY the email body text, no subject line, no additional formatting.`
+                },
+                {
+                    role: "user",
+                    content: `Resume:\n${resumeText}\n\nJob Title: ${jobTitle}\nCompany: ${companyName}\nInterviewer: ${interviewerName}\nInterview Date: ${interviewDate}`
+                }
+            ],
+            temperature: 0.7,
+        })
+
+        return completion.choices[0].message.content || ""
+    } catch (e) {
+        console.error("Thank You Email Gen Error", e)
+        throw new Error("Failed to generate thank-you email")
+    }
+}
+
+export async function optimizeLinkedIn(
+    resumeText: string,
+    targetRole: string
+): Promise<{ headline: string; summary: string; tips: string[] }> {
+    try {
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4o",
+            messages: [
+                {
+                    role: "system",
+                    content: `You are a LinkedIn optimization expert. Analyze the resume and suggest improvements for a LinkedIn profile.
+Return a JSON object with:
+{
+  "headline": "A compelling 120-character headline",
+  "summary": "A 3-paragraph professional summary highlighting key achievements",
+  "tips": ["Tip 1", "Tip 2", "Tip 3", "Tip 4", "Tip 5"]
+}
+
+Make it keyword-rich, achievement-focused, and tailored to the target role.`
+                },
+                {
+                    role: "user",
+                    content: `Resume:\n${resumeText}\n\nTarget Role: ${targetRole}`
+                }
+            ],
+            temperature: 0.7,
+            response_format: { type: "json_object" }
+        })
+
+        const content = completion.choices[0].message.content
+        if (!content) throw new Error("No content")
+
+        return JSON.parse(content)
+    } catch (e) {
+        console.error("LinkedIn Optimization Error", e)
+        throw new Error("Failed to optimize LinkedIn profile")
     }
 }

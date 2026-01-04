@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Plus, LayoutGrid, List as ListIcon, MoreHorizontal } from 'lucide-react'
+import { Plus, LayoutGrid, List as ListIcon, MoreHorizontal, FileText, Mail, ChevronRight } from 'lucide-react'
 import { updateJobApplication } from './actions'
+import DocumentGenerator from './[id]/DocumentGenerator'
 
 type Job = {
     id: string
@@ -15,7 +16,7 @@ type Job = {
 }
 
 const STATUS_COLUMNS = [
-    { id: 'applied', label: 'Applied', color: 'bg-blue-50 border-blue-200 text-blue-700' },
+    { id: 'applied', label: 'Applied', color: 'bg-indigo-50 border-indigo-200 text-indigo-700' },
     { id: 'interview', label: 'Interview', color: 'bg-purple-50 border-purple-200 text-purple-700' },
     { id: 'offer', label: 'Offer', color: 'bg-green-50 border-green-200 text-green-700' },
     { id: 'rejected', label: 'Rejected', color: 'bg-red-50 border-red-200 text-red-700' },
@@ -25,6 +26,17 @@ export default function JobBoard({ initialJobs }: { initialJobs: Job[] }) {
     const [viewMode, setViewMode] = useState<'list' | 'board'>('list')
     const [jobs, setJobs] = useState<Job[]>(initialJobs)
     const [draggingId, setDraggingId] = useState<string | null>(null)
+
+    // Modal State
+    const [selectedJob, setSelectedJob] = useState<Job | null>(null)
+    const [docType, setDocType] = useState<'cover_letter' | 'thank_you'>('cover_letter')
+    const [showModal, setShowModal] = useState(false)
+
+    const openGenerator = (job: Job, type: 'cover_letter' | 'thank_you') => {
+        setSelectedJob(job)
+        setDocType(type)
+        setShowModal(true)
+    }
 
     const handleDragStart = (e: React.DragEvent, id: string) => {
         setDraggingId(id)
@@ -106,20 +118,40 @@ export default function JobBoard({ initialJobs }: { initialJobs: Job[] }) {
                                             </div>
                                             <div className="mt-4 flex-shrink-0 sm:mt-0 sm:ml-5">
                                                 <div className="flex -space-x-1 overflow-hidden">
-                                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                                                    <span className={`px-2.5 py-0.5 inline-flex text-xs font-bold rounded-full uppercase tracking-wide
                                                         ${job.status === 'offer' ? 'bg-green-100 text-green-800' :
                                                             job.status === 'rejected' ? 'bg-red-100 text-red-800' :
                                                                 job.status === 'interview' ? 'bg-purple-100 text-purple-800' :
-                                                                    'bg-blue-100 text-blue-800'}`}>
+                                                                    'bg-indigo-100 text-indigo-800'}`}>
                                                         {job.status}
                                                     </span>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="ml-5 flex-shrink-0">
-                                            <Link href={`/dashboard/jobs/${job.id}`} className="text-gray-400 hover:text-gray-500">
-                                                <span className="sr-only">View details</span>
-                                                <button className="text-sm font-medium text-indigo-600 hover:text-indigo-900 border border-indigo-200 rounded px-3 py-1">View</button>
+                                        <div className="ml-5 flex-shrink-0 flex items-center space-x-2">
+                                            <button
+                                                onClick={() => openGenerator(job, 'cover_letter')}
+                                                className="inline-flex items-center px-3 py-1 border border-indigo-200 shadow-sm text-xs font-medium rounded text-indigo-600 bg-white hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition"
+                                                title="Generate Cover Letter"
+                                            >
+                                                <div className="flex items-center">
+                                                    <FileText className="h-3.5 w-3.5 mr-1.5" />
+                                                    Cover Letter
+                                                </div>
+                                            </button>
+                                            <button
+                                                onClick={() => openGenerator(job, 'thank_you')}
+                                                className="inline-flex items-center px-3 py-1 border border-indigo-200 shadow-sm text-xs font-medium rounded text-indigo-600 bg-white hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition"
+                                                title="Generate Thank You Email"
+                                            >
+                                                <div className="flex items-center">
+                                                    <Mail className="h-3.5 w-3.5 mr-1.5" />
+                                                    Thank You
+                                                </div>
+                                            </button>
+                                            <Link href={`/dashboard/jobs/${job.id}`} className="inline-flex items-center px-3 py-1 border border-transparent shadow-sm text-xs font-medium rounded text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition">
+                                                <span>View Application</span>
+                                                <ChevronRight className="ml-1.5 h-3 w-3" />
                                             </Link>
                                         </div>
                                     </div>
@@ -162,13 +194,41 @@ export default function JobBoard({ initialJobs }: { initialJobs: Job[] }) {
                                             </Link>
                                         </div>
                                         <p className="text-xs text-gray-500 mt-1">{job.company_name}</p>
-                                        <p className="text-[10px] text-gray-400 mt-2 text-right">{formatDate(job.updated_at || job.applied_date)}</p>
+                                        <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-2">
+                                            <div className="flex space-x-1">
+                                                <button
+                                                    onClick={() => openGenerator(job, 'cover_letter')}
+                                                    className="p-1 text-indigo-600 hover:bg-indigo-50 rounded"
+                                                    title="Generate Cover Letter"
+                                                >
+                                                    <FileText className="w-3.5 h-3.5" />
+                                                </button>
+                                                <button
+                                                    onClick={() => openGenerator(job, 'thank_you')}
+                                                    className="p-1 text-indigo-600 hover:bg-indigo-50 rounded"
+                                                    title="Generate Thank You Email"
+                                                >
+                                                    <Mail className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
+
+                                            <p className="text-[10px] text-gray-400">{formatDate(job.updated_at || job.applied_date)}</p>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
                         </div>
                     ))}
                 </div>
+            )}
+            {showModal && selectedJob && (
+                <DocumentGenerator
+                    jobId={selectedJob.id}
+                    jobTitle={selectedJob.job_title}
+                    companyName={selectedJob.company_name}
+                    initialTab={docType}
+                    onClose={() => setShowModal(false)}
+                />
             )}
         </div>
     )

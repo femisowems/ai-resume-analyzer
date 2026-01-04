@@ -68,8 +68,8 @@ export default function Home() {
                 <p className="text-gray-600">Get instant feedback with a 0-100 score and actionable improvement suggestions powered by GPT-4o.</p>
               </div>
               <div className="p-6 border rounded-lg hover:shadow-lg transition">
-                <div className="bg-blue-100 rounded-lg p-3 w-fit mb-4">
-                  <Target className="h-6 w-6 text-blue-600" />
+                <div className="bg-indigo-100 rounded-lg p-3 w-fit mb-4">
+                  <Target className="h-6 w-6 text-indigo-600" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Job Matching</h3>
                 <p className="text-gray-600">Compare your resume against job descriptions and identify missing keywords to optimize your fit.</p>

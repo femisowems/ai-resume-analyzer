@@ -20,12 +20,12 @@ export default function VerifyEmailPage() {
                         We've sent a verification link to your email address. Click the link to activate your account.
                     </p>
 
-                    <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-6">
+                    <div className="bg-indigo-50 border border-indigo-200 rounded-md p-4 mb-6">
                         <div className="flex items-start">
-                            <Mail className="h-5 w-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
+                            <Mail className="h-5 w-5 text-indigo-600 mt-0.5 mr-3 flex-shrink-0" />
                             <div className="text-sm text-left">
-                                <p className="font-medium text-blue-900 mb-1">Didn't receive the email?</p>
-                                <p className="text-blue-700">
+                                <p className="font-medium text-indigo-900 mb-1">Didn't receive the email?</p>
+                                <p className="text-indigo-700">
                                     Check your spam folder or wait a few minutes. The email should arrive shortly.
                                 </p>
                             </div>

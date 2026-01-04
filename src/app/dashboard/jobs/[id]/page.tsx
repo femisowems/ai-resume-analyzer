@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { ChevronLeft, ChevronRight, Briefcase, Calendar, Clock } from 'lucide-react'
 import { updateJobApplication, analyzeJobMatch, generateQuestions } from '../actions'
 import LinkedResumeSelector from './LinkedResumeSelector'
+import GenerateDocButton from './GenerateDocButton'
 
 export default async function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const supabase = await createClient()
@@ -114,7 +115,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
                             <span>Applied: {formatDate(job.applied_date)}</span>
                         </div>
                     </div>
-                    <span className={`px-3 py-1 text-sm font-semibold rounded-full capitalize
+                    <span className={`px-3 py-1 text-xs font-bold rounded-full uppercase tracking-wide
                         ${job.status === 'offer' ? 'bg-green-100 text-green-800' :
                             job.status === 'rejected' ? 'bg-red-100 text-red-800' :
                                 job.status === 'interview' ? 'bg-purple-100 text-purple-800' :
@@ -154,6 +155,27 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
                                 />
                             </div>
                         </div>
+
+                        {/* AI Document Generation */}
+                        <div className="border-t border-gray-200 pt-6 mt-6">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                                AI Documents 📄
+                            </h3>
+                            <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-6 flex flex-col sm:flex-row items-center justify-between">
+                                <div className="mb-4 sm:mb-0">
+                                    <h4 className="font-medium text-indigo-900">Need a Cover Letter or Thank-You Note?</h4>
+                                    <p className="text-sm text-indigo-700 mt-1">
+                                        Generate personalized documents tailored to this specific job application.
+                                    </p>
+                                </div>
+                                <GenerateDocButton
+                                    jobId={job.id}
+                                    jobTitle={job.job_title}
+                                    companyName={job.company_name}
+                                />
+                            </div>
+                        </div>
+
 
                         {/* AI Match Analysis */}
                         <div className="border-t border-gray-200 pt-6 mt-6">
@@ -289,7 +311,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
                         </div>
                     </form>
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     )
 }
