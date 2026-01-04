@@ -1,45 +1,39 @@
 # CareerAI - Intelligent Career Management Platform
 
-CareerAI is a comprehensive platform designed to help job seekers manage their career journey. It leverages Artificial Intelligence (OpenAI GPT-4o) to analyze resumes, provide improvement suggestions, track job applications, and calculate match scores against job descriptions.
+
+![CareerAI Dashboard Video Preview](./public/dashboard-video.webp)
+
+CareerAI is a comprehensive **Career Intelligence Platform** designed to help job seekers manage their career journey with data-driven insights. It transforms standard resume tracking into an actionable system using OpenAI GPT-4o.
 
 ## 🚀 Key Features
 
-### 1. Resume Management
--   **Upload & Parsing**: Upload PDF or DOCX resumes. The system automatically extracts text content.
--   **Versioning**: Keep track of multiple versions of your resume.
--   **AI Analysis**:
-    -   **Scoring**: Get a 0-100 score on your resume's effectiveness.
-    -   **Summary**: Auto-generated professional summary.
-    -   **Improvements**: Actionable bullet points to enhance your resume.
+### 1. 📊 Intelligent Dashboard (New)
+- **Career Health Snapshot**: Real-time 0-100 score of your job search momentum.
+- **Priority Actions Engine**: "Needs Attention" feeds that prioritize critical tasks (e.g., upcoming interviews, stale applications) over busy work.
+- **Pipeline Visualization**: Bento-box style view of your conversion funnel.
+- **AI Coach**: Natural language insights providing strategic advice on your next move.
 
-### 2. Job Application Tracking
--   **Dashboard**: Manage all your applications in one place.
--   **Status Tracking**: Track applications through stages (Applied, Interview, Offer, Rejected).
--   **Organization**: Link specific resume versions to job applications for better context.
+### 2. 📄 Resume Intelligence
+- **Deep Parsing**: Upload PDF/DOCX resumes with auto-text extraction.
+- **AI Scoring**: Get a 0-100 effectiveness score with bullet-level improvement suggestions.
+- **Contextual Versioning**: Manage multiple resume versions tailored to different roles.
 
-### 3. AI Job Matching
--   **Fit Analysis**: Compare your resume against a specific job description.
--   **Match Score**: Receive a percentage score indicating how well you fit the role.
--   **Gap Analysis**: Identify missing keywords and skills required for the job that are missing from your resume.
+### 3. 💼 Job Application Pipeline
+- **Smart Tracking**: Visual hiring pipeline (Applied → Screening → Interview → Offer).
+- **Match Analysis**: Compare your resume against detailed job descriptions to find gaps.
+- **Interview Prep**: Generate tailored interview questions and STAR-method answers based on the specific job context.
 
-### 4. AI Interview Coach
--   **Custom Questions**: Generate tailored technical and behavioral interview questions based on your resume and the job description.
--   **STAR Method Answers**: Get suggested answers using the STAR (Situation, Task, Action, Result) framework.
-
-### 5. Kanban Board
--   **Visual Pipeline**: View your job applications in a Kanban-style board organized by status.
--   **Drag-and-Drop**: Easily update application status by dragging cards between columns.
-
-### 6. User Settings
--   **Profile Management**: Edit your display name and view account details.
--   **Secure Authentication**: Sign out functionality integrated with Supabase Auth.
+### 4. ⚡️ Smart Automation
+- **Cover Letter Generator**: Create personalized cover letters in seconds.
+- **Thank You Emails**: Draft post-interview follow-ups automatically.
+- **LinkedIn Optimizer**: Turn your resume into a viral-ready LinkedIn post.
 
 ## 🛠 Tech Stack
 
--   **Frontend**: Next.js 14+ (App Router), TailwindCSS, Lucide Icons.
--   **Backend**: Supabase (PostgreSQL, Auth, Storage, Row Level Security).
--   **AI**: OpenAI API (GPT-4o).
--   **Parsing**: `pdf-parse` (PDF) and `mammoth` (DOCX).
+- **Frontend**: Next.js 14+ (App Router), TailwindCSS, Framer Motion.
+- **Backend**: Supabase (PostgreSQL, Auth, Storage, Row Level Security).
+- **AI**: OpenAI API (GPT-4o).
+- **Parsing**: `pdf-parse` (PDF) and `mammoth` (DOCX).
 
 ## 🏁 Getting Started
 
