@@ -1,8 +1,63 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
-import { ChevronLeft, FileText, Clock } from 'lucide-react'
-import ImprovementPanel from '../components/ImprovementPanel'
+import ResumeAnalysisHeader from '@/components/resume-analysis/ResumeAnalysisHeader'
+import ScoreBreakdown from '@/components/resume-analysis/ScoreBreakdown'
+import ActionQueue from '@/components/resume-analysis/ActionQueue'
+import KeywordCoverage from '@/components/resume-analysis/KeywordCoverage'
+import StructuredResumeViewer from '@/components/resume-analysis/StructuredResumeViewer'
+import { AnalysisResult, StructuredResumeContent } from '@/lib/types'
+
+// Helper to provide safe defaults if data is missing or in old format
+function normalizeAnalysis(analysis: any): AnalysisResult {
+    const defaults: AnalysisResult = {
+        overall_score: analysis?.score || 0,
+        sub_scores: analysis?.sub_scores || {
+            ats_compatibility: 0,
+            impact_metrics: 0,
+            clarity: 0,
+            keyword_match: 0,
+            seniority_fit: 0
+        },
+        keywords: analysis?.keywords || { present: [], missing: [], irrelevant: [] },
+        suggestions: analysis?.suggestions || (analysis?.improvements || []).map((imp: string, i: number) => ({
+            id: `legacy-${i}`,
+            type: 'general',
+            severity: 'medium',
+            section_target: 'general',
+            description: imp,
+            proposed_fix: ''
+        }))
+    }
+    return defaults
+}
+
+function normalizeContent(content: any): StructuredResumeContent {
+    // If it's already "structured" with sections
+    if (content.summary && typeof content.summary === 'object') {
+        return content as StructuredResumeContent
+    }
+
+    // Legacy fallback
+    return {
+        summary: { content: content.summary || '' },
+        contact_info: { content: content.contact_info || '' },
+        skills: { content: Array.isArray(content.skills) ? content.skills.join(', ') : (content.skills || '') },
+        experience: Array.isArray(content.experience) ? content.experience.map((e: any, i: number) => ({
+            id: `legacy-exp-${i}`,
+            role: e.role || '',
+            company: e.company || '',
+            duration: e.duration || '',
+            bullets: [e.description || '']
+        })) : [],
+        education: Array.isArray(content.education) ? content.education.map((e: any, i: number) => ({
+            id: `legacy-edu-${i}`,
+            degree: e.degree || '',
+            school: e.school || '',
+            year: e.year || ''
+        })) : [],
+        projects: []
+    }
+}
 
 export default async function ResumeDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const supabase = await createClient()
@@ -13,10 +68,13 @@ export default async function ResumeDetailPage({ params }: { params: Promise<{ i
     const resolvedParams = await params
     const { id } = resolvedParams
 
-    // 1. Fetch Resume Metadata
+    // Fetch Resume + Current Version
     const { data: resume } = await supabase
         .from('resumes')
-        .select('*')
+        .select(`
+            *,
+            current_version:resume_versions(*)
+        `)
         .eq('id', id)
         .eq('user_id', user.id)
         .single()
@@ -25,98 +83,57 @@ export default async function ResumeDetailPage({ params }: { params: Promise<{ i
         notFound()
     }
 
-    // 2. Fetch Current Version (if exists)
-    let currentVersion = null
-    if (resume.current_version_id) {
-        const { data: version } = await supabase
-            .from('resume_versions')
-            .select('*')
-            .eq('id', resume.current_version_id)
-            .single()
-        currentVersion = version
-    }
+    // Handle array response from easier join syntax (though .single() usually implies object but joined rels might be array)
+    const currentVersionRaw = Array.isArray(resume.current_version) ? resume.current_version[0] : resume.current_version
 
-    const content = (currentVersion?.content as any) || {}
-    const rawText = content.raw_text || 'No text parsed.'
-    const summary = content.summary || ''
+    // Parse / Normalize Data
+    // Note: In real app, we might check if 'analysis_result' is old format and re-trigger AI if needed.
+    const analysis = normalizeAnalysis(currentVersionRaw?.analysis_result || {})
+    const content = normalizeContent(currentVersionRaw?.content || {})
 
-    const analysis = (currentVersion?.analysis_result as any) || {}
-    const score = analysis.score
-    const improvements = analysis.improvements || []
-
+    // Split layout
     return (
-        <div className="p-8 max-w-5xl mx-auto">
-            <Link href="/dashboard/resumes" className="flex items-center text-sm text-gray-500 hover:text-indigo-600 mb-6">
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                Back to Resumes
-            </Link>
+        <div className="bg-gray-50 pb-20">
+            <ResumeAnalysisHeader
+                title={resume.title}
+                score={analysis.overall_score}
+                lastAnalyzed={currentVersionRaw?.created_at || resume.updated_at}
+            />
 
-            <div className="bg-white shadow rounded-lg overflow-hidden">
-                <div className="p-6 border-b border-gray-200 flex justify-between items-start">
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-900">{resume.title}</h1>
-                        <p className="text-sm text-gray-500 mt-1 flex items-center">
-                            <Clock className="h-4 w-4 mr-1" />
-                            Uploaded {new Date(resume.created_at).toLocaleDateString()}
-                        </p>
-                    </div>
-                </div>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 relative">
 
-                <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x border-gray-200">
-                    {/* Sidebar / Stats */}
-                    <div className="p-6 bg-gray-50">
-                        <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
-                            <FileText className="h-4 w-4 mr-2" />
-                            File Details
-                        </h3>
-                        <dl className="space-y-4 text-sm">
-                            {typeof score === 'number' && (
-                                <div>
-                                    <dt className="text-gray-500">AI Score</dt>
-                                    <dd className={`font-bold text-2xl ${score >= 70 ? 'text-green-600' : score >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                        {score}/100
-                                    </dd>
-                                </div>
-                            )}
-                            <div>
-                                <dt className="text-gray-500">Path</dt>
-                                <dd className="font-medium text-xs break-all text-gray-600">{resume.raw_file_path}</dd>
-                            </div>
-                            <div>
-                                <dt className="text-gray-500">Version</dt>
-                                <dd className="font-medium">{currentVersion?.version_number || 1}.0</dd>
-                            </div>
-                        </dl>
-
-                        {analysis.strengths && analysis.strengths.length > 0 && (
-                            <div className="mt-8">
-                                <h4 className="font-semibold text-gray-900 mb-3 text-xs uppercase tracking-wider">Top Strengths</h4>
-                                <ul className="space-y-2">
-                                    {analysis.strengths.slice(0, 3).map((str: string, i: number) => (
-                                        <li key={i} className="text-xs text-green-700 bg-green-50 px-2 py-1.5 rounded border border-green-100">
-                                            ✓ {str}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Content */}
-                    <div className="col-span-2 p-6">
-                        <ImprovementPanel resumeId={resume.id} improvements={improvements} />
-
-                        {summary && (
-                            <div className="mb-6">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Summary</h3>
-                                <p className="text-gray-800 bg-gray-50 p-3 rounded border text-sm leading-relaxed">{summary}</p>
-                            </div>
-                        )}
-
-                        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Raw Text Extraction</h3>
-                        <div className="prose prose-sm max-w-none bg-slate-900 p-4 rounded-md border border-slate-700 text-slate-300 font-mono text-xs overflow-auto max-h-[500px] whitespace-pre-wrap">
-                            {rawText}
+                    {/* Left Column: Interactive Viewer (60%) */}
+                    <div className="lg:col-span-7 space-y-6">
+                        <div className="flex justify-between items-center mb-2">
+                            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Interactive Resume</h2>
+                            <span className="text-xs text-indigo-600 bg-indigo-50 px-2 py-1 rounded cursor-pointer hover:bg-indigo-100">
+                                ✎ Click any section to edit
+                            </span>
                         </div>
+                        <StructuredResumeViewer content={content} />
+                    </div>
+
+                    {/* Right Column: AI Coach (40%) */}
+                    <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-8 lg:h-[calc(100vh-4rem)] lg:overflow-y-auto no-scrollbar pb-10">
+
+                        {/* 1. Score Breakdown */}
+                        <ScoreBreakdown
+                            overallScore={analysis.overall_score}
+                            subScores={analysis.sub_scores}
+                        />
+
+                        {/* 2. Action Queue */}
+                        <div className="flex-1 min-h-0">
+                            <ActionQueue suggestions={analysis.suggestions} />
+                        </div>
+
+                        {/* 3. Keyword Coverage */}
+                        <KeywordCoverage
+                            present={analysis.keywords.present}
+                            missing={analysis.keywords.missing}
+                        />
+
                     </div>
                 </div>
             </div>
