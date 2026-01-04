@@ -71,11 +71,12 @@ export async function uploadResume(formData: FormData) {
 
     // 6. Create Initial Version
     const initialContent = {
-        summary: aiResult?.summary || parsedText.slice(0, 500) + '...',
+        summary: aiResult?.structured_content?.summary || aiResult?.summary || parsedText.slice(0, 500) + '...',
         raw_text: parsedText,
-        skills: [],
-        experience: [],
-        education: [],
+        contact_info: aiResult?.structured_content?.contact_info || '',
+        skills: aiResult?.structured_content?.skills || [],
+        experience: aiResult?.structured_content?.experience || [],
+        education: aiResult?.structured_content?.education || [],
         projects: []
     }
 
@@ -104,4 +105,76 @@ export async function uploadResume(formData: FormData) {
     revalidatePath('/dashboard')
     // redirect('/dashboard/resumes')
     return { success: true, id: resume.id }
+}
+
+import { compareResumes } from '@/lib/openai'
+
+export async function compareResumesAction(resumeIdA: string, resumeIdB: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    // Fetch both resumes with their CURRENT version content
+    const { data: resumes } = await supabase
+        .from('resumes')
+        .select(`
+            id, 
+            title,
+            current_version:resume_versions(content)
+        `)
+        .in('id', [resumeIdA, resumeIdB])
+        .eq('user_id', user.id)
+
+    if (!resumes || resumes.length !== 2) throw new Error('Resumes not found')
+
+    const resumeA = resumes.find(r => r.id === resumeIdA)
+    const resumeB = resumes.find(r => r.id === resumeIdB)
+
+    // Supabase returns arrays for related data by default
+    const versionA = Array.isArray(resumeA?.current_version) ? resumeA?.current_version[0] : resumeA?.current_version
+    const versionB = Array.isArray(resumeB?.current_version) ? resumeB?.current_version[0] : resumeB?.current_version
+
+    const contentA = versionA?.content as any
+    const contentB = versionB?.content as any
+
+    // Fallback to raw_text if structured text is missing
+    const textA = contentA?.raw_text || JSON.stringify(contentA) || ''
+    const textB = contentB?.raw_text || JSON.stringify(contentB) || ''
+
+    return await compareResumes(textA, textB)
+}
+
+export async function improveResumeSection(resumeId: string, sectionName: string, instruction: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    // Get current version
+    const { data: resume } = await supabase
+        .from('resumes')
+        .select(`id, title, current_version:resume_versions(*)`)
+        .eq('id', resumeId)
+        .eq('user_id', user.id)
+        .single()
+
+    if (!resume) throw new Error('Resume not found')
+
+    const currentVersion = Array.isArray(resume.current_version) ? resume.current_version[0] : resume.current_version
+
+    if (!currentVersion) throw new Error('No version found')
+
+    const currentContent = currentVersion.content as any
+    const sectionText = currentContent[sectionName] || currentContent.structured_content?.[sectionName]
+
+    // If section doesn't exist, we might be creating it, or it's an error.
+    // For now, let's assume valid sections. "structured_content" usually isn't in 'content' root unless we flattened it.
+    // In uploadResume we flattened it:
+    // const initialContent = { summary, ...skills, experience... }
+
+    // So currentContent[sectionName] should work for 'experience', 'summary', etc.
+
+    // TODO: Implement actual AI call for rewriting.
+    // For now, we'll just mock it or throw.
+    // detailed AI implementation for SINGLE SECTION improvement is next.
+    throw new Error('AI Section Improvement not yet implemented in openai.ts')
 }

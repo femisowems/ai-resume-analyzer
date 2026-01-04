@@ -159,7 +159,7 @@ export async function getDashboardData(): Promise<DashboardData> {
             id: d.id,
             title: d.title || 'Untitled Document',
             type: d.type,
-            date: d.created_at
+            date: d.created_at || new Date().toISOString()
         }))
     }
 }

@@ -7,7 +7,25 @@ const openai = new OpenAI({
 export interface AnalysisResult {
     summary: string;
     score: number;
+    strengths: string[];
+    weaknesses: string[];
     improvements: string[];
+    structured_content: {
+        contact_info: string;
+        summary: string;
+        experience: Array<{
+            role: string;
+            company: string;
+            duration: string;
+            description: string;
+        }>;
+        education: Array<{
+            degree: string;
+            school: string;
+            year: string;
+        }>;
+        skills: string[];
+    };
 }
 
 export async function analyzeResume(text: string): Promise<AnalysisResult> {
@@ -16,20 +34,23 @@ export async function analyzeResume(text: string): Promise<AnalysisResult> {
     }
 
     const prompt = `
-    You are an expert AI Resume Analyzer. Analyze the following resume text and provide:
-    1. A professional summary (max 3-4 sentences).
-    2. A score from 0-100 based on impact, clarity, and skills (be strict but fair).
-    3. A list of 3-5 specific improvements to make the resume better.
+    You are an expert AI Resume Intelligence System. Analyze the following resume text deeply.
 
-    Return the result strictly as a JSON object with the following structure:
-    {
-      "summary": "string",
-      "score": number,
-      "improvements": ["string", "string"]
-    }
+    Provide a structured analysis returning strictly JSON with the following fields:
+    1. "summary": A professional executive summary (3-4 sentences).
+    2. "score": A competitive ATS score (0-100) based on impact, metrics, and clarity.
+    3. "strengths": List of 3-5 specific strong points (e.g., "Quantifiable Impact", "Strong Action Verbs").
+    4. "weaknesses": List of 3-5 specific weak points or risks (e.g., "Passive Voice", "Lack of Metrics").
+    5. "improvements": List of 3-5 actionable fixes to increase interview chances.
+    6. "structured_content": Parse the resume into structured sections:
+       - "contact_info": string
+       - "summary": string
+       - "experience": array of objects { "role", "company", "duration", "description" }
+       - "education": array of objects { "degree", "school", "year" }
+       - "skills": array of strings
 
     Resume Text:
-    ${text.slice(0, 10000)} -- truncate to avoid token limits if necessary
+    ${text.slice(0, 15000)}
     `;
 
     try {
@@ -54,6 +75,66 @@ export async function analyzeResume(text: string): Promise<AnalysisResult> {
     } catch (error) {
         console.error("OpenAI Analysis Error:", error);
         throw new Error("Failed to analyze resume with AI");
+    }
+}
+
+export interface ComparisonResult {
+    summary: string;
+    differences: {
+        category: string;
+        resume_a_notes: string;
+        resume_b_notes: string;
+        winner: 'A' | 'B' | 'Tie';
+    }[];
+    recommendation: string;
+}
+
+export async function compareResumes(resumeAText: string, resumeBText: string): Promise<ComparisonResult> {
+    if (!process.env.OPENAI_API_KEY) throw new Error("OpenAI API Key is missing");
+
+    const prompt = `
+    You are a Senior Recruiter comparing two resumes for a tech role.
+    Compare Resume A and Resume B.
+
+    Return JSON:
+    {
+      "summary": "Brief overview of how they compare (2 sentences).",
+      "differences": [
+        {
+          "category": "string (e.g., Impact Metrics, Skill Coverage, Formatting)",
+          "resume_a_notes": "string",
+          "resume_b_notes": "string",
+          "winner": "A" | "B" | "Tie"
+        }
+      ],
+      "recommendation": "Which resume is better for a general Senior Software Engineer role and why?"
+    }
+
+    Resume A:
+    ${resumeAText.slice(0, 7000)}
+
+    Resume B:
+    ${resumeBText.slice(0, 7000)}
+    `;
+
+    try {
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4o",
+            messages: [
+                { role: "system", content: "You are a helpful assistant that outputs JSON." },
+                { role: "user", content: prompt }
+            ],
+            response_format: { type: "json_object" },
+            temperature: 0.7,
+        });
+
+        const content = completion.choices[0].message.content;
+        if (!content) throw new Error("No content");
+
+        return JSON.parse(content) as ComparisonResult;
+    } catch (e) {
+        console.error("Comparison Error", e);
+        throw new Error("Failed to compare resumes");
     }
 }
 

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft, FileText, Clock } from 'lucide-react'
+import ImprovementPanel from '../components/ImprovementPanel'
 
 export default async function ResumeDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const supabase = await createClient()
@@ -45,9 +46,9 @@ export default async function ResumeDetailPage({ params }: { params: Promise<{ i
 
     return (
         <div className="p-8 max-w-5xl mx-auto">
-            <Link href="/dashboard" className="flex items-center text-sm text-gray-500 hover:text-indigo-600 mb-6">
+            <Link href="/dashboard/resumes" className="flex items-center text-sm text-gray-500 hover:text-indigo-600 mb-6">
                 <ChevronLeft className="h-4 w-4 mr-1" />
-                Back to Dashboard
+                Back to Resumes
             </Link>
 
             <div className="bg-white shadow rounded-lg overflow-hidden">
@@ -72,35 +73,38 @@ export default async function ResumeDetailPage({ params }: { params: Promise<{ i
                             {typeof score === 'number' && (
                                 <div>
                                     <dt className="text-gray-500">AI Score</dt>
-                                    <dd className="font-bold text-2xl text-indigo-600">{score}/100</dd>
+                                    <dd className={`font-bold text-2xl ${score >= 70 ? 'text-green-600' : score >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                        {score}/100
+                                    </dd>
                                 </div>
                             )}
                             <div>
                                 <dt className="text-gray-500">Path</dt>
-                                <dd className="font-medium text-xs break-all">{resume.raw_file_path}</dd>
+                                <dd className="font-medium text-xs break-all text-gray-600">{resume.raw_file_path}</dd>
                             </div>
                             <div>
                                 <dt className="text-gray-500">Version</dt>
                                 <dd className="font-medium">{currentVersion?.version_number || 1}.0</dd>
                             </div>
                         </dl>
-                    </div>
 
-                    {/* Content */}
-                    <div className="col-span-2 p-6">
-                        {improvements.length > 0 && (
-                            <div className="mb-6">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Suggested Improvements</h3>
-                                <ul className="bg-amber-50 border border-amber-200 rounded-md p-4 space-y-2">
-                                    {improvements.map((imp: string, i: number) => (
-                                        <li key={i} className="text-sm text-amber-900 flex items-start">
-                                            <span className="mr-2 text-amber-500">•</span>
-                                            {imp}
+                        {analysis.strengths && analysis.strengths.length > 0 && (
+                            <div className="mt-8">
+                                <h4 className="font-semibold text-gray-900 mb-3 text-xs uppercase tracking-wider">Top Strengths</h4>
+                                <ul className="space-y-2">
+                                    {analysis.strengths.slice(0, 3).map((str: string, i: number) => (
+                                        <li key={i} className="text-xs text-green-700 bg-green-50 px-2 py-1.5 rounded border border-green-100">
+                                            ✓ {str}
                                         </li>
                                     ))}
                                 </ul>
                             </div>
                         )}
+                    </div>
+
+                    {/* Content */}
+                    <div className="col-span-2 p-6">
+                        <ImprovementPanel resumeId={resume.id} improvements={improvements} />
 
                         {summary && (
                             <div className="mb-6">
