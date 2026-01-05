@@ -8,6 +8,7 @@ import { IntelligenceSidebar } from './components/IntelligenceSidebar'
 import { JobLinkModal } from './components/JobLinkModal'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 interface DocumentsDashboardProps {
     documents: DocumentItem[]
@@ -19,6 +20,7 @@ export default function DocumentsDashboard({ documents }: DocumentsDashboardProp
     const [activeTab, setActiveTab] = useState<TabType>('all')
     const [searchQuery, setSearchQuery] = useState('')
     const [linkingDoc, setLinkingDoc] = useState<DocumentItem | null>(null)
+    const router = useRouter()
 
     // Quick filtering logic
     const filteredDocs = useMemo(() => {
@@ -47,9 +49,7 @@ export default function DocumentsDashboard({ documents }: DocumentsDashboardProp
 
     // Interaction Handlers (Placeholders for complex modals)
     const handleView = (doc: DocumentItem) => {
-        console.log('View', doc)
-        // TODO: Open View Modal (Re-implement from DocumentsClient)
-        alert('View/Edit functionality is being upgraded. Please wait for the next update.')
+        router.push(`/dashboard/documents/${doc.id}`)
     }
 
     const handleDelete = async (id: string, type: string) => {

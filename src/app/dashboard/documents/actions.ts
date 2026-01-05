@@ -317,6 +317,114 @@ export async function getDocuments(jobId?: string): Promise<DocumentItem[]> {
     return unifiedDocs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 }
 
+export async function getDocument(id: string): Promise<DocumentItem | null> {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return null
+
+    // 1. Try fetching from documents (text/AI docs)
+    const { data: doc } = await supabase
+        .from('documents')
+        .select(`
+            id, type, content, created_at, status, ai_analysis, last_used_at, reuse_count, title,
+            document_job_links(
+                job_application:job_applications(
+                    id, company_name, job_title, status
+                )
+            )
+        `)
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .single()
+
+    if (doc) {
+        const links = doc.document_job_links?.map((link: any) => ({
+            jobId: link.job_application.id,
+            companyName: link.job_application.company_name,
+            jobTitle: link.job_application.job_title,
+            status: link.job_application.status
+        })) || []
+
+        return {
+            id: doc.id,
+            type: doc.type,
+            content: doc.content,
+            title: doc.title || (doc.type === 'cover_letter' ? 'Cover Letter' : 'Document'),
+            createdAt: doc.created_at,
+            status: doc.status || 'draft',
+            aiAnalysis: doc.ai_analysis,
+            lastUsedAt: doc.last_used_at,
+            reuseCount: doc.reuse_count || 0,
+            links: links,
+            companyName: links[0]?.companyName,
+            jobTitle: links[0]?.jobTitle,
+        }
+    }
+
+    // 2. Try fetching from resumes
+    const { data: resume } = await supabase
+        .from('resumes')
+        .select(`
+            id, title, created_at, raw_file_path, current_version_id,
+            resume_versions(
+                id, content,
+                job_applications!job_applications_resume_version_id_fkey(
+                    id, company_name, job_title, status
+                )
+            )
+        `)
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .single()
+
+    if (resume) {
+        let downloadUrl = undefined
+        let content = undefined
+        const currentVer = resume.resume_versions?.find((v: any) => v.id === resume.current_version_id)
+
+        if (currentVer) {
+            content = currentVer.content?.raw_text || currentVer.content?.text
+        }
+
+        if (resume.raw_file_path) {
+            const { data } = await supabase.storage
+                .from('resumes')
+                .createSignedUrl(resume.raw_file_path, 3600)
+            downloadUrl = data?.signedUrl
+        }
+
+        const allLinks: any[] = []
+        resume.resume_versions?.forEach((v: any) => {
+            if (v.job_applications) {
+                v.job_applications.forEach((job: any) => {
+                    allLinks.push({
+                        jobId: job.id,
+                        companyName: job.company_name,
+                        jobTitle: job.job_title,
+                        status: job.status
+                    })
+                })
+            }
+        })
+        const uniqueLinks = Array.from(new Map(allLinks.map(item => [item.jobId, item])).values())
+
+        return {
+            id: resume.id,
+            type: 'resume',
+            title: resume.title,
+            content: content,
+            createdAt: resume.created_at,
+            downloadUrl,
+            status: uniqueLinks.length > 0 ? 'active' : 'draft',
+            links: uniqueLinks as any,
+            reuseCount: uniqueLinks.length
+        }
+    }
+
+    return null
+}
+
 export async function deleteDocument(id: string, type?: string) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
