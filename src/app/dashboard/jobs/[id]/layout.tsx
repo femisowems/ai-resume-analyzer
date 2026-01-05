@@ -1,8 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, Briefcase, Calendar } from 'lucide-react'
-import JobTabs from './JobTabs'
+
+import { ChevronLeft, Calendar } from 'lucide-react'
+import JobTabs from '@/app/dashboard/jobs/[id]/JobTabs'
+import { CompanyLogo } from '@/components/ui/CompanyLogo'
 
 export default async function JobDetailLayout({
     children,
@@ -23,7 +25,7 @@ export default async function JobDetailLayout({
     // Fetch basic job info for the header
     const { data: job } = await supabase
         .from('job_applications')
-        .select('id, job_title, company_name, status, applied_date')
+        .select('id, job_title, company_name, status, applied_date, company_logo_cache')
         .eq('id', id)
         .eq('user_id', user.id)
         .single()
@@ -41,13 +43,21 @@ export default async function JobDetailLayout({
                 </Link>
 
                 <div className="flex justify-between items-start">
-                    <div>
-                        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">{job.job_title}</h1>
-                        <div className="flex items-center mt-2 text-gray-500 text-sm">
-                            <Briefcase className="w-4 h-4 mr-1.5" />
-                            <span className="font-medium mr-4 text-gray-700">{job.company_name}</span>
-                            <Calendar className="w-4 h-4 mr-1.5" />
-                            <span>Applied: {new Date(job.applied_date).toLocaleDateString()}</span>
+                    <div className="flex text-start gap-4">
+                        <CompanyLogo
+                            jobId={job.id}
+                            companyName={job.company_name}
+                            logoUrl={job.company_logo || job.company_logo_cache}
+                            size={64}
+                            className="rounded-xl shadow-sm flex-shrink-0"
+                        />
+                        <div>
+                            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">{job.job_title}</h1>
+                            <div className="flex items-center mt-2 text-gray-500 text-sm">
+                                <span className="font-medium mr-4 text-gray-700">{job.company_name}</span>
+                                <Calendar className="w-4 h-4 mr-1.5" />
+                                <span>Applied: {new Date(job.applied_date).toLocaleDateString()}</span>
+                            </div>
                         </div>
                     </div>
                     <span className={`px-3 py-1 text-sm font-bold rounded-full uppercase tracking-wide

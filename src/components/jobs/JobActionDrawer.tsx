@@ -6,6 +6,7 @@ import { X, ExternalLink, Mail, FileText, MessageSquare, Briefcase } from 'lucid
 import { formatDistanceToNow } from 'date-fns'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { CompanyLogo } from '@/components/ui/CompanyLogo'
 // Dynamic import for server actions to avoid bundling issues in some setups, but here we can try direct if strictly client
 // import { triggerJobAnalysis } from '@/app/dashboard/jobs/actions-analysis' 
 
@@ -76,9 +77,13 @@ export function JobActionDrawer({ job, isOpen, onClose }: JobActionDrawerProps) 
                 {/* Header */}
                 <div className="p-6 border-b border-slate-100 flex items-start justify-between bg-slate-50/50 rounded-t-2xl">
                     <div className="flex gap-4">
-                        <div className="w-16 h-16 bg-white rounded-xl border border-slate-200 flex items-center justify-center shadow-sm">
-                            <Briefcase className="text-slate-400" size={32} />
-                        </div>
+                        <CompanyLogo
+                            jobId={job.id}
+                            companyName={job.company_name}
+                            logoUrl={job.company_logo || job.company_logo_cache}
+                            size={64}
+                            className="rounded-xl shadow-sm"
+                        />
                         <div>
                             <h2 className="text-xl font-bold text-slate-900 leading-tight mb-1">{job.role}</h2>
                             <p className="text-slate-500 font-medium">{job.company_name}</p>
