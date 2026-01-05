@@ -473,3 +473,33 @@ export async function generateJobDocument(
         documentId: newDoc.id
     }
 }
+
+// ------------------------------------------------------------------
+// 5. Fetch User Resumes (for selector)
+// ------------------------------------------------------------------
+
+export async function fetchUserResumes() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        throw new Error('Unauthorized')
+    }
+
+    const { data: resumes } = await supabase
+        .from('resumes')
+        .select(`
+            id,
+            title,
+            created_at,
+            versions:resume_versions(
+                id,
+                version_number,
+                created_at
+            )
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+
+    return resumes || []
+}

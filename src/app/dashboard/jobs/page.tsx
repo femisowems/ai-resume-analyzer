@@ -16,7 +16,7 @@ export default async function JobsPage() {
         .from('job_applications')
         .select(`
             *,
-            resume_version:resume_versions(
+            resume_version:resume_versions!resume_version_id(
                 resume:resumes(
                     title
                 )

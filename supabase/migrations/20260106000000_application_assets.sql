@@ -242,7 +242,7 @@ SELECT
   END as status,
   'required'::document_priority as priority,
   d.created_at as generated_at,
-  d.updated_at as last_updated_at,
+  d.created_at as last_updated_at,
   ja.current_resume_version_id as depends_on_resume_version_id
 FROM document_job_links djl
 JOIN documents d ON d.id = djl.document_id

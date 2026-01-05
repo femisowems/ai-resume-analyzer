@@ -7,8 +7,9 @@ import { PostInterviewDocuments } from './PostInterviewDocuments'
 import { ContextActions } from './ContextActions'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { regenerateJobDocument, generateJobDocument } from '@/app/dashboard/jobs/actions-assets'
-import { toast } from 'sonner'
+import { regenerateJobDocument, generateJobDocument, changeJobResume } from '@/app/dashboard/jobs/actions-assets'
+import { toast } from '@/lib/toast'
+import { ResumeSelectorModal } from './ResumeSelectorModal'
 
 interface ApplicationAssetsProps {
     jobId: string
@@ -19,10 +20,25 @@ interface ApplicationAssetsProps {
 export function ApplicationAssets({ jobId, jobStage, assetsData }: ApplicationAssetsProps) {
     const router = useRouter()
     const [isGenerating, setIsGenerating] = useState(false)
+    const [isResumeModalOpen, setIsResumeModalOpen] = useState(false)
 
     const handleChangeResume = () => {
-        // TODO: Open resume selector modal
-        toast.info('Resume selector coming soon')
+        setIsResumeModalOpen(true)
+    }
+
+    const handleSelectResume = async (versionId: string) => {
+        try {
+            toast.loading('Updating resume and syncing documents...', { id: 'change-resume' })
+            const result = await changeJobResume(jobId, versionId)
+
+            if (result.success) {
+                toast.success(result.summary, { id: 'change-resume', duration: 5000 })
+                router.refresh()
+            }
+        } catch (error) {
+            console.error('Change resume error:', error)
+            toast.error('Failed to update resume', { id: 'change-resume' })
+        }
     }
 
     const handleOptimizeResume = () => {
@@ -90,11 +106,17 @@ export function ApplicationAssets({ jobId, jobStage, assetsData }: ApplicationAs
         }
     }
 
+    // Calculate overall status based on document health
+    const documents = [...assetsData.required_documents, ...assetsData.optional_documents]
+    const hasIssues = documents.some(d => d.status === 'needs_update' || d.status === 'missing')
+    const resumeStatus = hasIssues ? 'needs_update' : 'ready'
+
     return (
         <div className="space-y-6">
             {/* Resume Used - Fixed Context Anchor */}
             <ResumeAnchor
                 resumeAsset={assetsData.resume_used}
+                status={resumeStatus}
                 onChangeResume={handleChangeResume}
                 onOptimizeResume={handleOptimizeResume}
             />
@@ -122,6 +144,12 @@ export function ApplicationAssets({ jobId, jobStage, assetsData }: ApplicationAs
             <ContextActions
                 actions={assetsData.next_actions}
                 onActionClick={handleActionClick}
+                {/* Modals */}
+            <ResumeSelectorModal
+                isOpen={isResumeModalOpen}
+                onClose={() => setIsResumeModalOpen(false)}
+                onSelect={handleSelectResume}
+                currentVersionId={assetsData.resume_used?.resume_version?.id}
             />
         </div>
     )

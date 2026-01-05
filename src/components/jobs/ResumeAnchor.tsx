@@ -6,11 +6,12 @@ import { useState } from 'react'
 
 interface ResumeAnchorProps {
     resumeAsset: JobAsset | null
+    status: 'ready' | 'needs_update'
     onChangeResume: () => void
     onOptimizeResume: () => void
 }
 
-export function ResumeAnchor({ resumeAsset, onChangeResume, onOptimizeResume }: ResumeAnchorProps) {
+export function ResumeAnchor({ resumeAsset, status, onChangeResume, onOptimizeResume }: ResumeAnchorProps) {
     if (!resumeAsset) {
         return (
             <div className="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-200 dark:border-yellow-800 rounded-xl p-6">
@@ -37,7 +38,6 @@ export function ResumeAnchor({ resumeAsset, onChangeResume, onOptimizeResume }: 
 
     const resumeTitle = resumeAsset.resume_version?.resume?.title || 'Unknown Resume'
     const versionNumber = resumeAsset.resume_version?.version_number || 1
-    const status = 'ready' // TODO: Calculate actual status based on document dependencies
 
     return (
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-2 border-indigo-200 dark:border-indigo-800 rounded-xl p-6 shadow-sm">
@@ -48,8 +48,8 @@ export function ResumeAnchor({ resumeAsset, onChangeResume, onOptimizeResume }: 
                             Resume Used
                         </h3>
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${status === 'ready'
-                                ? 'bg-green-100 text-green-800 border border-green-200 dark:bg-green-900/40 dark:text-green-400 dark:border-green-800'
-                                : 'bg-yellow-100 text-yellow-800 border border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-400 dark:border-yellow-800'
+                            ? 'bg-green-100 text-green-800 border border-green-200 dark:bg-green-900/40 dark:text-green-400 dark:border-green-800'
+                            : 'bg-yellow-100 text-yellow-800 border border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-400 dark:border-yellow-800'
                             }`}>
                             {status === 'ready' ? '✅ Ready' : '⚠ Needs Update'}
                         </span>
