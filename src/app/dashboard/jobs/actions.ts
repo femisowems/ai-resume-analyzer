@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Job, JobActivity, JobStatus } from '@/lib/types'
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 
 export async function updateJobStatus(jobId: string, status: JobStatus) {
     const supabase = await createClient()
@@ -70,6 +71,54 @@ export async function getJobActivities(jobId: string) {
 // ------------------------------------------------------------------
 // Legacy / Detail Page Actions (Adapters)
 // ------------------------------------------------------------------
+
+
+export async function createJobApplication(formData: FormData) {
+    const company = formData.get('company_name') as string
+    const role = formData.get('job_title') as string
+    const status = formData.get('status') as JobStatus
+    const resumeId = formData.get('resume_id') as string // optional
+    const notes = formData.get('notes') as string // optional
+
+    if (!company || !role || !status) {
+        // Simple validation or return error state
+        return
+    }
+
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) throw new Error('Unauthorized')
+
+    const insertData: any = {
+        user_id: user.id,
+        company_name: company,
+        role: role,
+        status: status,
+        applied_date: new Date().toISOString()
+    }
+
+    if (resumeId) insertData.resume_id = resumeId
+    if (notes) insertData.notes = notes
+
+    // Insert
+    const { data, error } = await supabase
+        .from('job_applications')
+        .insert(insertData)
+        .select()
+        .single()
+
+    if (error) {
+        console.error('Error creating job:', error)
+        throw new Error('Failed to create job application')
+    }
+
+    // Log initial activity
+    await addJobActivity(data.id, 'STATUS_CHANGE', `Created application for ${role} at ${company}`, { status })
+
+    revalidatePath('/dashboard/jobs')
+    redirect('/dashboard/jobs')
+}
 
 export async function updateJobApplication(formData: FormData) {
     const id = formData.get('id') as string

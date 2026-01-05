@@ -1,3 +1,5 @@
+'use client'
+
 import { useState, useEffect } from 'react'
 import { Briefcase, ChevronDown, Check } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
