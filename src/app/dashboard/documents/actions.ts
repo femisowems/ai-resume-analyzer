@@ -30,6 +30,10 @@ export type DocumentItem = {
         jobTitle: string
         status: JobStatus
     }[]
+
+    // Backwards compatibility / Top-level checks
+    companyName?: string
+    jobTitle?: string
 }
 
 export type LinkableJob = {
