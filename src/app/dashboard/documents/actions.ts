@@ -195,7 +195,7 @@ export async function getDocuments(jobId?: string): Promise<DocumentItem[]> {
     const { data: generatedDocs } = await docQuery
 
     // 2. Fetch Resumes with versions and implicit job links
-    const { data: resumes } = await supabase
+    const { data: resumes, error: resumeError } = await supabase
         .from('resumes')
         .select(`
             id,
@@ -206,7 +206,7 @@ export async function getDocuments(jobId?: string): Promise<DocumentItem[]> {
             resume_versions(
                 id,
                 content,
-                job_applications(
+                job_applications!job_applications_resume_version_id_fkey(
                     id,
                     company_name,
                     job_title,
@@ -216,6 +216,10 @@ export async function getDocuments(jobId?: string): Promise<DocumentItem[]> {
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
+
+    if (resumeError) {
+        console.error('Error fetching resumes:', resumeError)
+    }
 
 
     // 3. Normalize and Combine
