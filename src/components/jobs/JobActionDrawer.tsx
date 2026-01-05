@@ -28,6 +28,11 @@ export function JobActionDrawer({ job, isOpen, onClose }: JobActionDrawerProps) 
             document.body.style.overflow = 'unset'
             return () => clearTimeout(timer)
         }
+
+        // Cleanup function for unmount (navigating away)
+        return () => {
+            document.body.style.overflow = 'unset'
+        }
     }, [isOpen])
 
     const handleActionClick = async (action: string) => {

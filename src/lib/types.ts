@@ -131,7 +131,8 @@ export interface Job {
     company_id?: string // Foreign key to Company
     company_logo?: string // Direct URL if we have it (or from cache)
     company_logo_cache?: string // Denormalized cache field
-    role: string
+    role: string // @deprecated use job_title
+    job_title: string
     status: JobStatus
     stage_specifics?: {
         interview_round?: number
@@ -140,6 +141,7 @@ export interface Job {
     }
     description?: string // Description is optional or loaded on demand
     match_score?: number
+    applied_date?: string
     last_contact_date?: string
     next_action_date?: string
     resume_version_id?: string
@@ -201,4 +203,123 @@ export interface Document {
     reuse_count: number
     created_at: string
     links?: DocumentJobLink[]
+}
+
+// --- Job Detail Redesign Types ---
+
+export interface JobStageHistory {
+    id: string
+    job_id: string
+    status: JobStatus
+    entered_at: string
+    exited_at?: string
+    duration_days?: number
+}
+
+export type ContactType = 'recruiter' | 'hiring_manager' | 'peer' | 'referral' | 'other'
+export type ContactStatus = 'identified' | 'contacted' | 'replied' | 'ghosted'
+
+export interface JobContact {
+    id: string
+    job_id: string
+    name: string
+    role?: string
+    email?: string
+    linkedin_url?: string
+    type: ContactType
+    status: ContactStatus
+    last_contact_at?: string
+    notes?: string
+    created_at: string
+}
+
+export type TimelineEventType = 'stage_change' | 'email_sent' | 'interview_scheduled' | 'document_created' | 'note_added'
+
+export interface JobTimelineEvent {
+    id: string
+    job_id: string
+    event_type: TimelineEventType
+    title: string
+    description?: string
+    metadata?: Json
+    occurred_at: string
+}
+
+// Extended Job Interface for Redesign
+export interface JobExtended extends Job {
+    next_action_json?: {
+        action: string
+        reason: string
+        type: 'urgent' | 'document' | 'outreach' | 'prep'
+    }
+    match_analysis_json?: {
+        score: number
+        missing_keywords: string[]
+        present_keywords: string[]
+        analysis_text: string
+    }
+    interview_prep_json?: {
+        questions: string[]
+        notes: string
+    }
+}
+
+// --- Application Assets Types ---
+
+export type DocumentType = 'cover_letter' | 'thank_you_email' | 'follow_up_email'
+export type DocumentStatus = 'ready' | 'needs_update' | 'draft' | 'missing'
+export type DocumentPriority = 'required' | 'optional'
+
+export interface JobAsset {
+    id: string
+    job_id: string
+    resume_version_id: string
+    resume_version?: ResumeVersion & {
+        resume?: {
+            id: string
+            title: string
+        }
+    }
+    locked_at: string
+    last_changed_at: string
+}
+
+export interface JobDocument {
+    id: string
+    job_id: string
+    document_id?: string
+    document?: Document
+    document_type: DocumentType
+    status: DocumentStatus
+    priority: DocumentPriority
+    generated_at?: string
+    last_updated_at?: string
+    depends_on_resume_version_id?: string
+    status_reason?: string
+    created_at: string
+}
+
+export interface DocumentStatusEvent {
+    id: string
+    job_document_id: string
+    old_status: DocumentStatus | null
+    new_status: DocumentStatus
+    reason: string
+    triggered_by: 'user' | 'ai' | 'resume_change'
+    created_at: string
+}
+
+export interface ApplicationAssetsData {
+    resume_used: JobAsset | null
+    required_documents: JobDocument[]
+    optional_documents: JobDocument[]
+    next_actions: ContextAction[]
+}
+
+export interface ContextAction {
+    id: string
+    label: string
+    type: 'generate' | 'regenerate' | 'review' | 'optimize'
+    priority: 'primary' | 'secondary'
+    document_type?: DocumentType
 }

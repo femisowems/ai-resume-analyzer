@@ -1,46 +1,55 @@
 # CareerAI - Intelligent Career Management Platform
 
-
 ![CareerAI Dashboard Video Preview](./public/dashboard-video.webp)
 
-CareerAI is a comprehensive **Career Intelligence Platform** designed to help job seekers manage their career journey with data-driven insights. It transforms standard resume tracking into an actionable system using OpenAI GPT-4o.
+CareerAI is a comprehensive **Career Intelligence Platform** designed to help job seekers manage their career journey with data-driven insights. It transforms standard resume tracking into an actionable system using **OpenAI GPT-4o** and **Google Gemini 1.5**.
 
 ## 🚀 Key Features
 
-### 1. 📊 Intelligent Dashboard (New)
+### 1. 📊 Intelligent Dashboard
 - **Career Health Snapshot**: Real-time 0-100 score of your job search momentum.
-- **Priority Actions Engine**: "Needs Attention" feeds that prioritize critical tasks (e.g., upcoming interviews, stale applications) over busy work.
+- **Priority Actions Engine**: "Needs Attention" feeds that prioritize critical tasks (e.g., upcoming interviews, stale applications).
 - **Pipeline Visualization**: Bento-box style view of your conversion funnel.
 - **AI Coach**: Natural language insights providing strategic advice on your next move.
 
-### 2. 📄 Resume Intelligence
+### 2. 🧠 Advanced Resume Intelligence
+- **Dual-Engine Analysis**: Leverages both OpenAI and Google Gemini for robust resume parsing and critique.
 - **Deep Parsing**: Upload PDF/DOCX resumes with auto-text extraction.
 - **AI Scoring**: Get a 0-100 effectiveness score with bullet-level improvement suggestions.
+- **"Fix It" Automation**: Auto-rewrite weak resume sections with a single click.
 - **Contextual Versioning**: Manage multiple resume versions tailored to different roles.
 
-### 3. 💼 Job Application Pipeline
-- **Smart Tracking**: Visual hiring pipeline (Applied → Screening → Interview → Offer).
-- **Match Analysis**: Compare your resume against detailed job descriptions to find gaps.
-- **Interview Prep**: Generate tailored interview questions and STAR-method answers based on the specific job context.
+### 3. 💼 Modern Job Application Pipeline
+- **Kanban Board**: Drag-and-drop tracking (Applied → Screening → Interview → Offer).
+- **Automated Company Intelligence**: Automatically fetches official company logos and brand colors via **Brandfetch**.
+- **Match Analysis**: Compare your resume against detailed job descriptions to identify keyword gaps.
+- **Interview Prep**: Generate tailored interview questions and STAR-method answers based on specific job contexts.
 
-### 4. ⚡️ Smart Automation
+### 4. 🗂️ Document Link Hub
+- **Central Repository**: Manage all your resumes, cover letters, and portfolio documents in one place.
+- **Smart Linking**: Link specific documents to job applications for easy retrieval during interviews.
+- **Preview & Edit**: Integrated document viewer and editor.
+
+### 5. ⚡️ Smart Automation
 - **Cover Letter Generator**: Create personalized cover letters in seconds.
-- **Thank You Emails**: Draft post-interview follow-ups automatically.
+- **Stale Application Detection**: Automatically flags applications that haven't moved in days.
 - **LinkedIn Optimizer**: Turn your resume into a viral-ready LinkedIn post.
 
 ## 🛠 Tech Stack
 
-- **Frontend**: Next.js 14+ (App Router), TailwindCSS, Framer Motion.
+- **Frontend**: Next.js 16 (App Router), TailwindCSS v4, Framer Motion.
 - **Backend**: Supabase (PostgreSQL, Auth, Storage, Row Level Security).
-- **AI**: OpenAI API (GPT-4o).
-- **Parsing**: `pdf-parse` (PDF) and `mammoth` (DOCX).
+- **AI**: OpenAI API (GPT-4o) & Google Gemini API (Flash 1.5).
+- **Tools**: `dnd-kit` (Kanban), `Brandfetch` (Logos), `pdf-parse`, `mammoth`.
 
 ## 🏁 Getting Started
 
 ### Prerequisites
--   Node.js 18+
+-   Node.js 20+
 -   Supabase Account
 -   OpenAI API Key
+-   Google Gemini API Key
+-   Brandfetch API Key (Optional, for logos)
 
 ### Installation
 
@@ -61,6 +70,9 @@ CareerAI is a comprehensive **Career Intelligence Platform** designed to help jo
     NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
     NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
     OPENAI_API_KEY=your_openai_api_key
+    GEMINI_API_KEY=your_gemini_api_key
+    # Optional
+    BRANDFETCH_API_KEY=your_brandfetch_key
     ```
 
 4.  **Database Migration**

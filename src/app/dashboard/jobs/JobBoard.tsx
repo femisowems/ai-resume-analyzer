@@ -59,7 +59,7 @@ export default function JobBoard({ initialJobs }: JobBoardProps) {
             <IntelligenceConsole jobs={displayJobs} />
 
             {/* Kanban Pipeline */}
-            <div className="flex-1 overflow-x-auto overflow-y-hidden px-6 pb-6">
+            <div className="flex-1 overflow-x-auto overflow-y-auto px-6 pb-6">
                 <PipelineBoard onJobClick={handleJobClick} />
             </div>
 

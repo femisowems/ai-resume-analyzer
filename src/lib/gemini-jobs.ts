@@ -83,7 +83,9 @@ export interface JobMatchAnalysis {
     match_score: number;
     keywords_matched: string[];
     missing_keywords: string[];
+    present_keywords: string[];
     overall_fit: string;
+    analysis_text: string;
     interview_prep_questions: string[];
 }
 
@@ -99,15 +101,17 @@ export async function analyzeJobMatch(resumeText: string, jobDescription: string
     1. Score the match (0-100). Be strict. 70+ is good.
     2. Extract KEYWORDS from JD that are present in Resume.
     3. Extract KEYWORDS from JD that are MISSING in Resume.
-    4. Provide 3 specific interview prep questions based on the gaps or key requirements.
+    4. Provide a textual analysis of the fit (strengths/weaknesses).
 
     Output JSON:
     {
       "match_score": number, // 0-100
       "keywords_matched": ["string"],
       "missing_keywords": ["string"],
-      "overall_fit": "string (Short summary, e.g. 'Strong candidate for Senior role due to...')",
-      "interview_prep_questions": ["string", "string", "string"]
+      "present_keywords": ["string"], // same as keywords_matched, for consistency
+      "overall_fit": "string",
+      "analysis_text": "string (Detailed feedback paragraph)",
+      "interview_prep_questions": ["string"] // Legacy field, keep empty or minimal
     }
     `;
 
@@ -119,5 +123,103 @@ export async function analyzeJobMatch(resumeText: string, jobDescription: string
     } catch (error) {
         console.error("Gemini Job Match Error:", error);
         throw new Error("Failed to analyze job match");
+    }
+}
+
+// ------------------------------------------------------------------
+// 3. Next Best Action (NBA) Engine
+// ------------------------------------------------------------------
+
+export interface NextBestAction {
+    action: string;
+    reason: string;
+    type: 'urgent' | 'document' | 'outreach' | 'prep';
+}
+
+export async function generateNextBestAction(jobState: {
+    status: string,
+    days_in_stage: number,
+    match_score: number,
+    last_activity_type?: string
+}): Promise<NextBestAction> {
+    const prompt = `
+    You are a Career Strategy Coach.
+    Determine the single most high-leverage "Next Best Action" for this job application.
+
+    Context:
+    - Status: ${jobState.status}
+    - Days in current stage: ${jobState.days_in_stage}
+    - Resume Match Score: ${jobState.match_score || 'Unknown'}
+    - Last Activity: ${jobState.last_activity_type || 'None'}
+
+    Rules:
+    - If status is APPLIED and > 7 days passed: Suggest "follow-up".
+    - If status is INTERVIEW: Suggest "prep" or "mock interview".
+    - If status is SAVED: Suggest "optimize resume" or "apply".
+    - If match score is low (< 60) and status is SAVED/APPLIED: Suggest "tailor resume".
+
+    Output JSON:
+    {
+      "action": "string (Short command, e.g. 'Send Follow-up Email')",
+      "reason": "string (Why? e.g. 'It has been 8 days since applying.')",
+      "type": "string (urgent | document | outreach | prep)"
+    }
+    `;
+
+    try {
+        const result = await model.generateContent(prompt);
+        const text = result.response.text();
+        const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        return JSON.parse(cleanJson) as NextBestAction;
+    } catch (error) {
+        // Fallback rule-based
+        if (jobState.status === 'INTERVIEW') return { action: 'Prepare for Interview', reason: 'Interview stage active', type: 'prep' };
+        if (jobState.days_in_stage > 14) return { action: 'Send Follow-up', reason: 'No movement for 2 weeks', type: 'outreach' };
+        return { action: 'Review Application', reason: 'Keep momentum going', type: 'document' };
+    }
+}
+
+// ------------------------------------------------------------------
+// 4. Interview Prep Generator
+// ------------------------------------------------------------------
+
+export interface InterviewPrepData {
+    questions: string[];
+    notes: string;
+}
+
+export async function generateInterviewPrep(jobTitle: string, companyName: string, jobDescription: string): Promise<InterviewPrepData> {
+    const prompt = `
+    Generate distinct interview questions for:
+    Role: ${jobTitle}
+    Company: ${companyName}
+    JD Snippet: "${jobDescription.slice(0, 3000)}..."
+
+    Task:
+    1. Generate 5 likely questions (mix of Behavioral, Technical, and Company-Specific).
+    2. Provide a short "Prep Note" on culture or focus.
+
+    Output JSON:
+    {
+      "questions": ["string", "string", "string", "string", "string"],
+      "notes": "string"
+    }
+    `;
+
+    try {
+        const result = await model.generateContent(prompt);
+        const text = result.response.text();
+        const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        return JSON.parse(cleanJson) as InterviewPrepData;
+    } catch (error) {
+        return {
+            questions: [
+                "Tell me about yourself.",
+                "Why do you want to work at " + companyName + "?",
+                "Describe a challenging technical problem you solved.",
+                "How do you handle conflict in a team?"
+            ],
+            notes: "Focus on standard behavioral questions as fallback."
+        };
     }
 }

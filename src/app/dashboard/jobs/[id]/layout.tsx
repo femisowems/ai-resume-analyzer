@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ChevronLeft, Calendar } from 'lucide-react'
 import JobTabs from '@/app/dashboard/jobs/[id]/JobTabs'
 import { CompanyLogo } from '@/components/ui/CompanyLogo'
+import { JobHeader } from '@/components/jobs/JobHeader'
 
 export default async function JobDetailLayout({
     children,
@@ -25,7 +26,18 @@ export default async function JobDetailLayout({
     // Fetch basic job info for the header
     const { data: job } = await supabase
         .from('job_applications')
-        .select('id, job_title, company_name, status, applied_date, company_logo_cache')
+        .select(`
+            id, 
+            job_title, 
+            company_name, 
+            status, 
+            applied_date, 
+            company_logo_cache,
+            match_score, 
+            created_at,
+            updated_at,
+            user_id
+        `)
         .eq('id', id)
         .eq('user_id', user.id)
         .single()
@@ -34,46 +46,51 @@ export default async function JobDetailLayout({
         notFound()
     }
 
+    // Fetch Next Job (created AFTER current)
+
+    // Fetch Next Job (created AFTER current)
+    const { data: nextJob } = await supabase
+        .from('job_applications')
+        .select('id')
+        .eq('user_id', user.id)
+        .gt('created_at', job.created_at) // Newer jobs
+        .order('created_at', { ascending: true }) // Oldest of the newer ones
+        .limit(1)
+        .maybeSingle()
+
+    // Fetch Previous Job (created BEFORE current)
+    const { data: prevJob } = await supabase
+        .from('job_applications')
+        .select('id')
+        .eq('user_id', user.id)
+        .lt('created_at', job.created_at) // Older jobs
+        .order('created_at', { ascending: false }) // Newest of the older ones
+        .limit(1)
+        .maybeSingle()
+
+    if (!job) {
+        notFound()
+    }
+
+
+    // Cast to JobExtended for the component. 
+    // We can assume the missing fields are undefined which is fine as they are optional.
+    const jobExtended = { ...job, role: job.job_title } as any
+
     return (
-        <div className="p-8 max-w-5xl mx-auto">
-            <div className="mb-6">
-                <Link href="/dashboard/jobs" className="flex items-center text-sm text-gray-500 hover:text-indigo-600 mb-4 transition-colors">
-                    <ChevronLeft className="h-4 w-4 mr-1" />
-                    Back to Jobs
-                </Link>
+        <div className="p-0 md:p-8 max-w-6xl mx-auto">
+            <JobHeader
+                job={jobExtended}
+                nextJobId={nextJob?.id}
+                prevJobId={prevJob?.id}
+            />
 
-                <div className="flex justify-between items-start">
-                    <div className="flex text-start gap-4">
-                        <CompanyLogo
-                            jobId={job.id}
-                            companyName={job.company_name}
-                            logoUrl={job.company_logo || job.company_logo_cache}
-                            size={64}
-                            className="rounded-xl shadow-sm flex-shrink-0"
-                        />
-                        <div>
-                            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">{job.job_title}</h1>
-                            <div className="flex items-center mt-2 text-gray-500 text-sm">
-                                <span className="font-medium mr-4 text-gray-700">{job.company_name}</span>
-                                <Calendar className="w-4 h-4 mr-1.5" />
-                                <span>Applied: {new Date(job.applied_date).toLocaleDateString()}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <span className={`px-3 py-1 text-sm font-bold rounded-full uppercase tracking-wide
-                        ${job.status === 'offer' ? 'bg-green-100 text-green-800' :
-                            job.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                                job.status === 'interview' ? 'bg-purple-100 text-purple-800' :
-                                    'bg-blue-100 text-blue-800'}`}>
-                        {job.status}
-                    </span>
+            <div className="px-4 md:px-0">
+                <JobTabs jobId={id} />
+
+                <div className="mt-6 md:mt-8">
+                    {children}
                 </div>
-            </div>
-
-            <JobTabs jobId={id} />
-
-            <div className="mt-8">
-                {children}
             </div>
         </div>
     )
