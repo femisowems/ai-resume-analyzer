@@ -59,14 +59,16 @@ function normalizeContent(content: any): StructuredResumeContent {
     }
 }
 
-export default async function ResumeDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ResumeDetailPage({ params, searchParams }: { params: Promise<{ id: string }>, searchParams: Promise<{ jobId?: string }> }) {
     const supabase = await createClient()
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return null
 
     const resolvedParams = await params
+    const resolvedSearchParams = await searchParams
     const { id } = resolvedParams
+    const { jobId } = resolvedSearchParams
 
     // Fetch Resume + Current Version
     const { data: resume } = await supabase
@@ -83,13 +85,45 @@ export default async function ResumeDetailPage({ params }: { params: Promise<{ i
         notFound()
     }
 
-    // Handle array response from easier join syntax (though .single() usually implies object but joined rels might be array)
+    // Fetch active jobs for the selector
+    const { data: jobs } = await supabase
+        .from('job_applications')
+        .select('id, role, company_name, analysis_json')
+        .eq('user_id', user.id)
+        .in('status', ['SAVED', 'APPLIED', 'INTERVIEW', 'OFFER'])
+        .order('created_at', { ascending: false })
+
+    // Handle array response
     const currentVersionRaw = Array.isArray(resume.current_version) ? resume.current_version[0] : resume.current_version
 
     // Parse / Normalize Data
     // Note: In real app, we might check if 'analysis_result' is old format and re-trigger AI if needed.
-    const analysis = normalizeAnalysis(currentVersionRaw?.analysis_result || {})
+    let analysis = normalizeAnalysis(currentVersionRaw?.analysis_result || {})
     const content = normalizeContent(currentVersionRaw?.content || {})
+
+    // IF A JOB IS SELECTED, WE OVERRIDE THE ANALYSIS CONTEXT
+    let targetJob = null
+    if (jobId && jobs) {
+        targetJob = jobs.find(j => j.id === jobId)
+        if (targetJob && targetJob.analysis_json) {
+            // Merge Job Analysis into Resume Analysis
+            // 1. Override missing keywords
+            const jobAnalysis = targetJob.analysis_json
+
+            // We want to show what is missing from the JOB, not just the general resume check
+            const missingFromJob = jobAnalysis.missing_keywords || []
+            const matchedFromJob = jobAnalysis.keywords_matched || []
+
+            analysis = {
+                ...analysis,
+                keywords: {
+                    ...analysis.keywords,
+                    present: matchedFromJob, // approximate mapping
+                    missing: missingFromJob
+                }
+            }
+        }
+    }
 
     // Split layout
     return (
@@ -98,6 +132,7 @@ export default async function ResumeDetailPage({ params }: { params: Promise<{ i
                 title={resume.title}
                 score={analysis.overall_score}
                 lastAnalyzed={currentVersionRaw?.created_at || resume.updated_at}
+                jobs={jobs as any || []}
             />
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -106,12 +141,20 @@ export default async function ResumeDetailPage({ params }: { params: Promise<{ i
                     {/* Left Column: Interactive Viewer (60%) */}
                     <div className="lg:col-span-7 space-y-6">
                         <div className="flex justify-between items-center mb-2">
-                            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Interactive Resume</h2>
+                            <div className="flex items-center gap-3">
+                                <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Interactive Resume</h2>
+                                {targetJob && (
+                                    <span className="text-xs bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full font-medium border border-indigo-200">
+                                        Targeting: {targetJob.role}
+                                    </span>
+                                )}
+                            </div>
+
                             <span className="text-xs text-indigo-600 bg-indigo-50 px-2 py-1 rounded cursor-pointer hover:bg-indigo-100">
                                 ✎ Click any section to edit
                             </span>
                         </div>
-                        <StructuredResumeViewer content={content} />
+                        <StructuredResumeViewer content={content} resumeId={resume.id} />
                     </div>
 
                     {/* Right Column: AI Coach (40%) */}

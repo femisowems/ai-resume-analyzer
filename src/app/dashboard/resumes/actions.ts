@@ -176,5 +176,42 @@ export async function improveResumeSection(resumeId: string, sectionName: string
     // TODO: Implement actual AI call for rewriting.
     // For now, we'll just mock it or throw.
     // detailed AI implementation for SINGLE SECTION improvement is next.
-    throw new Error('AI Section Improvement not yet implemented in openai.ts')
+    // throw new Error('AI Section Improvement not yet implemented in openai.ts')
+
+    // Lazy import to avoid circular dep issues in some envs
+    const { rewriteResumeSection } = await import('@/lib/openai')
+
+    const newText = await rewriteResumeSection(sectionText, instruction)
+
+    // Update the resume content in DB
+    // We need to update deeply nested JSON. Ideally use jsonb_set in SQL, but here we fetch-modify-save given we have the full object.
+
+    const updatedContent = { ...currentContent, [sectionName]: newText }
+    // If it was nested in structured_content, try that too
+    if (currentContent.structured_content) {
+        updatedContent.structured_content = { ...currentContent.structured_content, [sectionName]: newText }
+    }
+
+    // Save new version
+    const { data: newVersion, error: saveError } = await supabase
+        .from('resume_versions')
+        .insert({
+            resume_id: resume.id,
+            version_number: (currentVersion.version_number || 1) + 1,
+            content: updatedContent,
+            analysis_result: currentVersion.analysis_result // Keep old analysis until re-run
+        })
+        .select()
+        .single()
+
+    if (saveError) throw new Error('Failed to save improved version')
+
+    // Update pointer
+    await supabase
+        .from('resumes')
+        .update({ current_version_id: newVersion.id })
+        .eq('id', resume.id)
+
+    revalidatePath(`/dashboard/resumes/${resumeId}`)
+    return { success: true, newText }
 }

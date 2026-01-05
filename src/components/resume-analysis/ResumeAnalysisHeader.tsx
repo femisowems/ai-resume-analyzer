@@ -1,16 +1,16 @@
-'use client'
-
+import { Job } from '@/lib/types'
+import JobTargetSelector from './JobTargetSelector'
 import { ArrowLeft, Clock, Download, Share2 } from 'lucide-react'
 import Link from 'next/link'
-import JobTargetSelector from './JobTargetSelector'
 
 interface Props {
     title: string
     score: number
     lastAnalyzed: string
+    jobs: Job[]
 }
 
-export default function ResumeAnalysisHeader({ title, score, lastAnalyzed }: Props) {
+export default function ResumeAnalysisHeader({ title, score, lastAnalyzed, jobs }: Props) {
     return (
         <div className="bg-slate-900 border-b border-slate-800 text-white">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
@@ -39,7 +39,7 @@ export default function ResumeAnalysisHeader({ title, score, lastAnalyzed }: Pro
 
                     {/* Center: Context Bar */}
                     <div className="flex-1 md:flex md:justify-center">
-                        <JobTargetSelector />
+                        <JobTargetSelector jobs={jobs} />
                     </div>
 
                     {/* Right: Actions */}

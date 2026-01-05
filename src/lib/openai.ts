@@ -383,3 +383,39 @@ Make it keyword-rich, achievement-focused, and tailored to the target role.`
         throw new Error("Failed to optimize LinkedIn profile")
     }
 }
+
+export async function rewriteResumeSection(
+    currentText: string,
+    instruction: string,
+    context?: string
+): Promise<string> {
+    try {
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4o",
+            messages: [
+                {
+                    role: "system",
+                    content: `You are an expert Resume Writer and Editor.
+Your task is to rewrite a specific section or bullet point of a resume based on the user's instruction.
+
+Rules:
+- Improve clarity, impact, and professionalism.
+- Use strong action verbs.
+- Incorporate metrics if reasonable to infer (or use [placeholder] for user to fill).
+- If the instruction is to "add keyword X", ensure it is integrated naturally.
+- Return ONLY the rewritten text. Do not add conversational filler.`
+                },
+                {
+                    role: "user",
+                    content: `Current Text:\n"${currentText}"\n\nInstruction: "${instruction}"\n\n${context ? `Additional Context (e.g. Job Description): ${context}` : ''}`
+                }
+            ],
+            temperature: 0.7,
+        })
+
+        return completion.choices[0].message.content || currentText
+    } catch (e) {
+        console.error("Rewrite Error", e)
+        throw new Error("Failed to rewrite section")
+    }
+}
