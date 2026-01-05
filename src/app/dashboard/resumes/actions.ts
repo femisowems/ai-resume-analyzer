@@ -2,7 +2,8 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { parseResumeFile } from '@/lib/parse-resume'
-import { analyzeResume } from '@/lib/openai'
+// import { analyzeResume } from '@/lib/openai' // Removed for Async Gemini
+
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
@@ -43,15 +44,9 @@ export async function uploadResume(formData: FormData) {
         console.error('Parse Error:', e)
     }
 
-    // 4. AI Analysis
-    let aiResult = null;
-    try {
-        if (parsedText) {
-            aiResult = await analyzeResume(parsedText);
-        }
-    } catch (e) {
-        console.error("AI Analysis Error:", e);
-    }
+    // 4. AI Analysis (Skipped for async processing)
+    const aiResult = null; // Defer analysis
+
 
     // 5. Create Resume Record
     const { data: resume, error: dbError } = await supabase
@@ -71,12 +66,12 @@ export async function uploadResume(formData: FormData) {
 
     // 6. Create Initial Version
     const initialContent = {
-        summary: aiResult?.structured_content?.summary || aiResult?.summary || parsedText.slice(0, 500) + '...',
+        summary: parsedText.slice(0, 500) + '...',
         raw_text: parsedText,
-        contact_info: aiResult?.structured_content?.contact_info || '',
-        skills: aiResult?.structured_content?.skills || [],
-        experience: aiResult?.structured_content?.experience || [],
-        education: aiResult?.structured_content?.education || [],
+        contact_info: '',
+        skills: [],
+        experience: [],
+        education: [],
         projects: []
     }
 
@@ -214,4 +209,73 @@ export async function improveResumeSection(resumeId: string, sectionName: string
 
     revalidatePath(`/dashboard/resumes/${resumeId}`)
     return { success: true, newText }
+}
+
+import { analyzeResumeWithGemini } from '@/lib/gemini'
+
+export async function analyzeResumeAction(resumeId: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    // 1. Fetch Resume & Current Version
+    const { data: resume } = await supabase
+        .from('resumes')
+        .select(`
+            id, 
+            current_version:resume_versions(*)
+        `)
+        .eq('id', resumeId)
+        .eq('user_id', user.id)
+        .single()
+
+    if (!resume) throw new Error('Resume not found')
+
+    const currentVersion = Array.isArray(resume.current_version) ? resume.current_version[0] : resume.current_version
+    if (!currentVersion) throw new Error('No content to analyze')
+
+    const content = currentVersion.content as any
+    // Prefer raw_text if available, otherwise try to reconstruct or use summary
+    const textToAnalyze = content.raw_text || JSON.stringify(content)
+
+    if (!textToAnalyze || textToAnalyze.length < 50) {
+        throw new Error('Not enough text to analyze')
+    }
+
+    try {
+        // 2. Call Gemini
+        const aiResult = await analyzeResumeWithGemini(textToAnalyze)
+
+        // 3. Update the Version with Analysis Result
+        // We do NOT create a new version, we enrich the current one because it was just created/uploaded
+        // OR we can create a new version if we want to preserve "Raw" state. 
+        // Let's update in place for the "Initial Upload" flow.
+
+        // Merge structured content if Gemini provides it better
+        const updatedContent = {
+            ...content,
+            // If we didn't have structured data, use Gemini's
+            summary: aiResult.structured_resume?.summary?.content || content.summary,
+            skills: aiResult.structured_resume?.skills?.content ? aiResult.structured_resume.skills.content.split(',').map((s: string) => s.trim()) : content.skills,
+            // We could map more fields here
+        }
+
+        const { error: updateError } = await supabase
+            .from('resume_versions')
+            .update({
+                analysis_result: aiResult,
+                content: updatedContent
+            })
+            .eq('id', currentVersion.id)
+
+        if (updateError) throw updateError
+
+        revalidatePath('/dashboard/resumes')
+        revalidatePath(`/dashboard/resumes/${resumeId}`)
+
+        return { success: true }
+    } catch (e) {
+        console.error("Gemini Analysis Failed", e)
+        throw new Error("Analysis failed")
+    }
 }

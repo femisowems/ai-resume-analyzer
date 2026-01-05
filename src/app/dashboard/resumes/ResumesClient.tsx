@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Plus, SlidersHorizontal, X } from 'lucide-react'
 import ResumeStatsCard from './components/ResumeStatsCard'
 import BestResumeHighlight from './components/BestResumeHighlight'
-import { compareResumesAction } from './actions' // We will wire this up later
+import { compareResumesAction, analyzeResumeAction } from './actions'
 
 export interface ResumeWithStats {
     id: string
@@ -30,6 +30,23 @@ export default function ResumesClient({ resumes, bestResume }: ResumesClientProp
     const [selectedIds, setSelectedIds] = useState<string[]>([])
     const [comparisonResult, setComparisonResult] = useState<any>(null)
     const [isComparing, setIsComparing] = useState(false)
+    const [analyzingIds, setAnalyzingIds] = useState<Set<string>>(new Set())
+
+    const handleAnalyze = async (resumeId: string) => {
+        setAnalyzingIds(prev => new Set(prev).add(resumeId))
+        try {
+            await analyzeResumeAction(resumeId)
+        } catch (e) {
+            console.error(e)
+            alert("Analysis failed. Please try again.")
+        } finally {
+            setAnalyzingIds(prev => {
+                const next = new Set(prev)
+                next.delete(resumeId)
+                return next
+            })
+        }
+    }
 
     const toggleSelection = (id: string) => {
         if (selectedIds.includes(id)) {
@@ -211,6 +228,8 @@ export default function ResumesClient({ resumes, bestResume }: ResumesClientProp
                                     interviewCount: resume.stats.interviewCount,
                                     topStrengths: resume.stats.topStrengths
                                 }}
+                                onAnalyze={() => handleAnalyze(resume.id)}
+                                isAnalyzing={analyzingIds.has(resume.id)}
                             />
                         </div>
                     </div>

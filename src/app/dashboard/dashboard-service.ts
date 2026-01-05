@@ -42,18 +42,16 @@ export async function getDashboardData(): Promise<DashboardData> {
     // Parallelize detailed data fetching
     const [
         jobsResult,
-        resumesResult,
         documentsResult,
         applicationsResult
     ] = await Promise.all([
         supabase.from('job_applications').select('*').eq('user_id', user.id),
-        supabase.from('resumes').select('*').eq('user_id', user.id),
         supabase.from('documents').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
         supabase.from('job_applications').select('status, created_at').eq('user_id', user.id)
     ])
 
     const jobs = jobsResult.data || []
-    const resumes = resumesResult.data || [] // Currently unused but good for context if needed later
+    // const resumes = resumesResult.data || [] // Removed unused fetch
     const recentDocs = documentsResult.data || []
 
     // --- 1. Career Health Calculation ---
@@ -109,7 +107,8 @@ export async function getDashboardData(): Promise<DashboardData> {
         })
     })
 
-    // Info: No Resume (if user has 0 resumes)
+    // Info: No Resume (Disabled check to save perf)
+    /* 
     if (resumes.length === 0) {
         actions.push({
             id: 'no-resume',
@@ -120,6 +119,7 @@ export async function getDashboardData(): Promise<DashboardData> {
             actionUrl: '/dashboard/resumes/new'
         })
     }
+    */
 
     // Sort actions: Critical > Warning > Info
     const urgencyMap = { critical: 3, warning: 2, info: 1 }

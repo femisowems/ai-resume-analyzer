@@ -24,28 +24,9 @@ export default function AIInsights() {
                     transition={{ delay: 0.2 }}
                     className="space-y-4"
                 >
-                    <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/10">
-                        <div className="flex gap-3 items-start">
-                            <Lightbulb size={18} className="text-yellow-300 shrink-0 mt-1" />
-                            <div>
-                                <h3 className="font-bold text-sm mb-1 text-white">Optimize for 'Product Manager'</h3>
-                                <p className="text-xs text-indigo-100 leading-relaxed">
-                                    Your resume match score drops by 15% for Senior roles. Consider highlighting "Strategic Roadmapping" and "Cross-functional Leadership" more prominently in your summary.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/10">
-                        <div className="flex gap-3 items-start">
-                            <div className="shrink-0 w-4 h-4 rounded-full bg-green-400 mt-1"></div>
-                            <div>
-                                <h3 className="font-bold text-sm mb-1 text-white">Momentum is building!</h3>
-                                <p className="text-xs text-indigo-100 leading-relaxed">
-                                    You've applied to 5 jobs this week, up 20% from last week. Keep this pace to maximize interview chances by mid-month.
-                                </p>
-                            </div>
-                        </div>
+                    <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/10 text-center py-8">
+                        <p className="text-sm text-indigo-100 font-medium">AI Coach initialization...</p>
+                        <p className="text-xs text-indigo-200 mt-1">Gathering application data for personalized insights.</p>
                     </div>
                 </motion.div>
 
