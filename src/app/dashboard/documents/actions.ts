@@ -22,6 +22,7 @@ export type DocumentItem = {
     // Usage / Activity
     lastUsedAt?: string
     reuseCount?: number
+    needsReviewReasons?: string[]
 
     // Linked Jobs (Unified)
     links: {
@@ -233,30 +234,30 @@ export async function getDocuments(jobId?: string): Promise<DocumentItem[]> {
             status: link.job_application.status
         })) || []
 
-        // If jobId argument was passed, we only want docs linked to it? 
-        // Or if we are in the dashboard, we show all links.
+        const needsReviewReasons: string[] = []
+        if (doc.ai_analysis && doc.ai_analysis.personalization_score < 60) {
+            needsReviewReasons.push('Low personalization score')
+        }
+        // Example check: active but old
+        if (doc.status === 'active' && doc.last_used_at) {
+            const daysSinceUsed = (Date.now() - new Date(doc.last_used_at).getTime()) / (1000 * 3600 * 24)
+            if (daysSinceUsed > 30) needsReviewReasons.push('Stale document')
+        }
 
         unifiedDocs.push({
             id: doc.id,
             type: doc.type,
             content: doc.content,
-            title: doc.type === 'cover_letter' ? 'Cover Letter' : 'Document', // Default, overridden by implicit title in DB if strictly followed but we construct it usually
-            // Actually documents table doesn't have title column in previous schema? 
-            // Wait, createDocument inserts 'title'.
-            // Let's assume schema has title (it wasn't in my migration but createDocument used it)
-            // Checking previous file content... yes insert had title.
-            // I should select title.
-            // ... adding title to select above ...
-
+            title: doc.type === 'cover_letter' ? 'Cover Letter' : 'Document',
             createdAt: doc.created_at,
             status: doc.status || 'draft',
             aiAnalysis: doc.ai_analysis,
             lastUsedAt: doc.last_used_at,
             reuseCount: doc.reuse_count || 0,
             links: links,
-            // Backwards compat mainly for display if needed
             companyName: links[0]?.companyName,
             jobTitle: links[0]?.jobTitle,
+            needsReviewReasons
         })
     })
 

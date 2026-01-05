@@ -3,6 +3,7 @@ import { FileText, Mail, Linkedin, MoreVertical, Calendar, Briefcase, Zap, Check
 import { DocumentAnalysis } from "@/lib/types"
 import { pdf } from '@react-pdf/renderer'
 import { PdfDocumentView } from "@/components/documents/PdfDocumentView"
+import { NeedsReviewReason } from "./NeedsReviewReason"
 
 interface DocumentCardProps {
     doc: DocumentItem
@@ -93,6 +94,13 @@ export function DocumentCard({ doc, onView, onDelete, onLink }: DocumentCardProp
                     </button>
                 </div>
             </div>
+
+            {/* Needs Review Override */}
+            {doc.needsReviewReasons && doc.needsReviewReasons.length > 0 && (
+                <div className="mb-3">
+                    <NeedsReviewReason reasons={doc.needsReviewReasons} />
+                </div>
+            )}
 
             {/* Content Preview */}
             <div

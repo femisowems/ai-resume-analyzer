@@ -1,41 +1,53 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { LayoutGrid, Filter, Search, Plus, Sparkles } from 'lucide-react'
+import { LayoutGrid, Filter, Search, Plus, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react'
 import { DocumentItem, deleteDocument, linkDocumentToJob } from './actions'
 import { DocumentCard } from './components/DocumentCard'
 import { IntelligenceSidebar } from './components/IntelligenceSidebar'
 import { JobLinkModal } from './components/JobLinkModal'
-
+import { DocumentsTabs } from './components/DocumentsTabs'
+import { DocumentTypeChips } from './components/DocumentTypeChips'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 interface DocumentsDashboardProps {
     documents: DocumentItem[]
 }
 
-type TabType = 'all' | 'active' | 'draft' | 'needs_review'
-
 export default function DocumentsDashboard({ documents }: DocumentsDashboardProps) {
-    const [activeTab, setActiveTab] = useState<TabType>('all')
-    const [searchQuery, setSearchQuery] = useState('')
-    const [linkingDoc, setLinkingDoc] = useState<DocumentItem | null>(null)
+    const searchParams = useSearchParams()
     const router = useRouter()
 
-    // Quick filtering logic
+    // URL State
+    const activeTab = searchParams.get('tab') || 'all'
+    const activeType = searchParams.get('type')
+    // Search is still local state for rapid typing, but could be URL synced debounced
+    const [searchQuery, setSearchQuery] = useState('')
+
+    const [linkingDoc, setLinkingDoc] = useState<DocumentItem | null>(null)
+
+    // Filter Logic
     const filteredDocs = useMemo(() => {
         let result = documents
 
-        // Tab Filter
-        if (activeTab === 'active') {
-            result = result.filter(d => d.status === 'active' || (d.links && d.links.length > 0))
-        } else if (activeTab === 'draft') {
-            result = result.filter(d => d.status === 'draft' && (!d.links || d.links.length === 0))
-        } else if (activeTab === 'needs_review') {
-            result = result.filter(d => d.aiAnalysis && d.aiAnalysis.personalization_score < 60)
+        // 1. Tab Logic (Workflow)
+        if (activeTab === 'in-use') {
+            result = result.filter(d =>
+            (d.links && d.links.some(l =>
+                ['APPLIED', 'RECRUITER_SCREEN', 'INTERVIEW', 'OFFER'].includes(l.status)
+            ))
+            )
+        } else if (activeTab === 'needs-review') {
+            result = result.filter(d => d.needsReviewReasons && d.needsReviewReasons.length > 0)
         }
 
-        // Search Filter
+        // 2. Type Filter
+        if (activeType) {
+            result = result.filter(d => d.type === activeType)
+        }
+
+        // 3. Search Filter
         if (searchQuery) {
             const q = searchQuery.toLowerCase()
             result = result.filter(d =>
@@ -45,9 +57,9 @@ export default function DocumentsDashboard({ documents }: DocumentsDashboardProp
         }
 
         return result
-    }, [documents, activeTab, searchQuery])
+    }, [documents, activeTab, activeType, searchQuery])
 
-    // Interaction Handlers (Placeholders for complex modals)
+    // Interaction Handlers
     const handleView = (doc: DocumentItem) => {
         router.push(`/dashboard/documents/${doc.id}`)
     }
@@ -62,13 +74,15 @@ export default function DocumentsDashboard({ documents }: DocumentsDashboardProp
         setLinkingDoc(doc)
     }
 
+    // Helper for Empty State Message
+    const getEmptyStateMessage = () => {
+        if (activeTab === 'needs-review') return "You're in good shape! No documents need attention right now."
+        if (activeTab === 'in-use') return "No active documents found. Link documents to job applications to see them here."
+        return "No documents found."
+    }
+
     return (
         <div className="flex min-h-screen bg-gray-50/30 -m-8">
-            {/* Negative margin to break out of parent padding if needed, or adjust parent */}
-            {/* We assume parent wrapper has padding, but for full sidebar layout we might want to take over. 
-            For now, stick to fluid layout within wrapper.
-        */}
-
             <div className="flex-1 p-8">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
@@ -76,7 +90,7 @@ export default function DocumentsDashboard({ documents }: DocumentsDashboardProp
                         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                             Document Hub
                             <span className="text-xs font-normal text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
-                                Beta
+                                2.0
                             </span>
                         </h1>
                         <p className="text-gray-500 mt-1">Manage, analyze, and optimize your career artifacts.</p>
@@ -86,10 +100,10 @@ export default function DocumentsDashboard({ documents }: DocumentsDashboardProp
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                             <input
                                 type="text"
-                                placeholder="Search documents..."
+                                placeholder="Search..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm w-64 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-white shadow-sm"
+                                className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm w-48 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-white shadow-sm"
                             />
                         </div>
                         <Link
@@ -102,44 +116,20 @@ export default function DocumentsDashboard({ documents }: DocumentsDashboardProp
                     </div>
                 </div>
 
-                {/* AI Summary Banner */}
-                <div className="mb-8 p-4 bg-gradient-to-r from-indigo-50 to-white rounded-xl border border-indigo-100 flex items-start gap-4 shadow-sm">
-                    <div className="bg-white p-2 rounded-lg border border-indigo-50 shadow-sm shrink-0">
-                        <Sparkles className="h-5 w-5 text-indigo-600" />
+                {/* Navigation & Filters */}
+                <div className="mb-8">
+                    <DocumentsTabs />
+                    <div className="flex items-center justify-between">
+                        <DocumentTypeChips />
+                        <span className="text-xs text-gray-400 font-medium whitespace-nowrap mb-6">
+                            {filteredDocs.length} document{filteredDocs.length !== 1 && 's'}
+                        </span>
                     </div>
-                    <div>
-                        <h3 className="text-sm font-bold text-gray-900">Intelligence Summary</h3>
-                        <p className="text-sm text-gray-600 mt-1">
-                            You have <span className="font-semibold text-gray-900">{documents.filter(d => d.status === 'active' || d.links?.length).length} active documents</span> in your pipeline.
-                            Consider analyzing your "Frontend Cover Letter" to improve its personalization score (currently 40%).
-                        </p>
-                    </div>
-                </div>
-
-                {/* Smart Tabs */}
-                <div className="flex items-center gap-8 border-b border-gray-200 mb-8">
-                    {[
-                        { id: 'all', label: 'All Documents' },
-                        { id: 'active', label: 'Active (In Use)' },
-                        { id: 'draft', label: 'Drafts' },
-                        { id: 'needs_review', label: 'Needs Review' }
-                    ].map(tab => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id as TabType)}
-                            className={`pb-4 text-sm font-medium border-b-2 transition-all ${activeTab === tab.id
-                                ? 'text-indigo-600 border-indigo-600'
-                                : 'text-gray-500 border-transparent hover:text-gray-700'
-                                }`}
-                        >
-                            {tab.label}
-                        </button>
-                    ))}
                 </div>
 
                 {/* Content Grid */}
                 {filteredDocs.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in duration-300">
                         {filteredDocs.map(doc => (
                             <div key={doc.id} className="h-full">
                                 <DocumentCard
@@ -152,17 +142,42 @@ export default function DocumentsDashboard({ documents }: DocumentsDashboardProp
                         ))}
                     </div>
                 ) : (
-                    <div className="text-center py-24">
+                    <div className="text-center py-24 bg-white rounded-2xl border border-dashed border-gray-200">
                         <div className="bg-gray-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <Filter className="h-8 w-8 text-gray-300" />
+                            {activeTab === 'needs-review' ? (
+                                <CheckCircle2 className="h-8 w-8 text-green-500" />
+                            ) : (
+                                <Filter className="h-8 w-8 text-gray-300" />
+                            )}
                         </div>
-                        <h3 className="text-gray-900 font-medium">No documents found</h3>
-                        <p className="text-gray-500 text-sm mt-1">Try adjusting your filters or search query.</p>
+                        <h3 className="text-gray-900 font-medium text-lg">
+                            {getEmptyStateMessage()}
+                        </h3>
+                        <p className="text-gray-500 text-sm mt-2 max-w-sm mx-auto">
+                            {activeTab === 'needs-review'
+                                ? "All your documents meet relevance and quality standards."
+                                : "Try adjusting your filters or search query to find what you're looking for."
+                            }
+                        </p>
+                        {(activeType || searchQuery) && (
+                            <button
+                                onClick={() => {
+                                    router.push(`?tab=${activeTab}`) // Clear type
+                                    setSearchQuery('')
+                                }}
+                                className="mt-6 text-indigo-600 font-medium text-sm hover:underline"
+                            >
+                                Clear filters
+                            </button>
+                        )}
                     </div>
                 )}
             </div>
 
-            {/* Right Sidebar */}
+            {/* Right Sidebar - Keeps File Details visible when selecting? 
+                Actually, removing Sidebar for now or keeping as global context helper.
+                Let's keep it but make it smarter later. For now, it's just there.
+             */}
             <IntelligenceSidebar documents={documents} />
 
             <JobLinkModal
@@ -170,7 +185,6 @@ export default function DocumentsDashboard({ documents }: DocumentsDashboardProp
                 onClose={() => setLinkingDoc(null)}
                 document={linkingDoc}
             />
-
         </div>
     )
 }
