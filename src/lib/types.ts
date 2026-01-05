@@ -6,6 +6,20 @@ export type Json =
     | { [key: string]: Json | undefined }
     | Json[]
 
+export interface Profile {
+    id: string
+    email: string
+    full_name: string | null
+    subscription_tier: string
+    target_roles?: string[]
+    skills?: string[]
+    experience_summary?: string
+    linkedin_url?: string
+    portfolio_url?: string
+    years_of_experience?: number
+    created_at: string
+}
+
 export interface Resume {
     id: string
     user_id: string

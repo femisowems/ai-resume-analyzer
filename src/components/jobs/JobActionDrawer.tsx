@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils'
 import { X, ExternalLink, Mail, FileText, MessageSquare, Briefcase } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 // Dynamic import for server actions to avoid bundling issues in some setups, but here we can try direct if strictly client
 // import { triggerJobAnalysis } from '@/app/dashboard/jobs/actions-analysis' 
 
@@ -82,6 +83,13 @@ export function JobActionDrawer({ job, isOpen, onClose }: JobActionDrawerProps) 
                             <h2 className="text-xl font-bold text-slate-900 leading-tight mb-1">{job.role}</h2>
                             <p className="text-slate-500 font-medium">{job.company_name}</p>
                             <div className="flex items-center gap-2 mt-3">
+                                <Link
+                                    href={`/dashboard/jobs/${job.id}`}
+                                    className="flex items-center gap-1 text-xs font-semibold px-2 py-1 bg-indigo-600 text-white rounded-md border border-indigo-600 hover:bg-indigo-700 transition-colors shadow-sm"
+                                >
+                                    Open War Room
+                                    <ExternalLink size={12} className="ml-1" />
+                                </Link>
                                 <span className="text-xs font-semibold px-2 py-1 bg-indigo-50 text-indigo-700 rounded-md border border-indigo-100">
                                     {job.status.replace('_', ' ')}
                                 </span>
