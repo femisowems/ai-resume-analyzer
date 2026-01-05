@@ -104,7 +104,7 @@ export default async function ResumesPage() {
     let bestResume: ResumeCalc | null = null;
     let highImpactScore = -1;
 
-    resumeStats.forEach((r) => {
+    for (const r of resumeStats) {
         const interviewRate = r.stats.applicationsCount > 0 ? (r.stats.interviewCount / r.stats.applicationsCount) : 0
         const impactScore = (interviewRate * 100) + (r.stats.atsScoreAvg * 0.5)
 
@@ -112,7 +112,7 @@ export default async function ResumesPage() {
             highImpactScore = impactScore
             bestResume = r
         }
-    })
+    }
 
     // Map to Client Interface (removing 'scores')
     const finalResumes: ResumeWithStats[] = resumeStats.map(r => ({
