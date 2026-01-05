@@ -6,6 +6,7 @@ import { DocumentItem, deleteDocument, linkDocumentToJob } from './actions'
 import { DocumentCard } from './components/DocumentCard'
 import { IntelligenceSidebar } from './components/IntelligenceSidebar'
 import { JobLinkModal } from './components/JobLinkModal'
+import { DeleteDocumentDialog } from './components/DeleteDocumentDialog'
 import { DocumentsTabs } from './components/DocumentsTabs'
 import { DocumentTypeChips } from './components/DocumentTypeChips'
 import Link from 'next/link'
@@ -26,6 +27,7 @@ export default function DocumentsDashboard({ documents }: DocumentsDashboardProp
     const [searchQuery, setSearchQuery] = useState('')
 
     const [linkingDoc, setLinkingDoc] = useState<DocumentItem | null>(null)
+    const [deletingDoc, setDeletingDoc] = useState<DocumentItem | null>(null)
 
     // Filter Logic
     const filteredDocs = useMemo(() => {
@@ -64,10 +66,15 @@ export default function DocumentsDashboard({ documents }: DocumentsDashboardProp
         router.push(`/dashboard/documents/${doc.id}`)
     }
 
-    const handleDelete = async (id: string, type: string) => {
-        if (confirm('Are you sure you want to archive/delete this document?')) {
-            await deleteDocument(id, type)
-        }
+    const handleDeleteClick = (id: string, type: string) => {
+        const doc = documents.find(d => d.id === id)
+        if (doc) setDeletingDoc(doc)
+    }
+
+    const handleConfirmDelete = async () => {
+        if (!deletingDoc) return
+        await deleteDocument(deletingDoc.id, deletingDoc.type)
+        setDeletingDoc(null)
     }
 
     const handleLink = async (doc: DocumentItem) => {
@@ -135,7 +142,7 @@ export default function DocumentsDashboard({ documents }: DocumentsDashboardProp
                                 <DocumentCard
                                     doc={doc}
                                     onView={handleView}
-                                    onDelete={handleDelete}
+                                    onDelete={handleDeleteClick}
                                     onLink={handleLink}
                                 />
                             </div>
@@ -180,10 +187,11 @@ export default function DocumentsDashboard({ documents }: DocumentsDashboardProp
              */}
             <IntelligenceSidebar documents={documents} />
 
-            <JobLinkModal
-                isOpen={!!linkingDoc}
-                onClose={() => setLinkingDoc(null)}
-                document={linkingDoc}
+            <DeleteDocumentDialog
+                isOpen={!!deletingDoc}
+                onClose={() => setDeletingDoc(null)}
+                onConfirm={handleConfirmDelete}
+                document={deletingDoc}
             />
         </div>
     )

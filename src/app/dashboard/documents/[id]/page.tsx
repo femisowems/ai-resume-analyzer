@@ -1,8 +1,9 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Download, Calendar, Briefcase, FileText, CheckCircle, Copy, ExternalLink, Printer } from 'lucide-react'
+import { ArrowLeft, Calendar, Briefcase, FileText, CheckCircle, Copy } from 'lucide-react'
 import { getDocument } from '../actions'
 import { Metadata } from 'next'
+import { DocumentDetailActions } from '../components/DocumentDetailActions'
 
 export const metadata: Metadata = {
     title: 'View Document | CareerAI',
@@ -74,43 +75,7 @@ export default async function DocumentViewPage({ params }: PageProps) {
                 </div>
 
                 {/* Actions Toolbar */}
-                <div className="flex items-center gap-3 self-end md:self-start">
-                    {/* Primary Actions based on Type */}
-                    {isPdf && document.downloadUrl && (
-                        <a
-                            href={document.downloadUrl}
-                            download
-                            className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition"
-                        >
-                            <Download className="h-4 w-4 mr-2" />
-                            Download PDF
-                        </a>
-                    )}
-
-                    {!isPdf && (
-                        <button
-                            className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition group"
-                        // Note: Client component logic needed for clipboard, or simple script. 
-                        // For simplicity in server component, we can omit specific client hydration for 'copy' unless we make this client or add a small client wrapper.
-                        // Let's assume standard browser behavior or use a small client wrapper if needed.
-                        // Actually, let's keep it simple: Just user-select-all on the content area is often enough, or the user manually copies.
-                        // But better: "Print".
-                        >
-                            <Printer className="h-4 w-4 mr-2" />
-                            Print
-                        </button>
-                    )}
-
-                    {primaryLink && (
-                        <Link
-                            href={`/dashboard/jobs/${primaryLink.jobId}`}
-                            className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 shadow-sm transition"
-                        >
-                            View Job
-                            <ExternalLink className="h-4 w-4 ml-2" />
-                        </Link>
-                    )}
-                </div>
+                <DocumentDetailActions document={document} />
             </div>
 
             {/* Document Viewer Container */}

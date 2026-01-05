@@ -1,5 +1,5 @@
 import { DocumentItem } from "../actions"
-import { FileText, Mail, Linkedin, MoreVertical, Calendar, Briefcase, Zap, CheckCircle2, TrendingUp, AlertCircle, Download } from "lucide-react"
+import { FileText, Mail, Linkedin, MoreVertical, Calendar, Briefcase, Zap, CheckCircle2, TrendingUp, AlertCircle, Download, Trash2 } from "lucide-react"
 import { DocumentAnalysis } from "@/lib/types"
 import { pdf } from '@react-pdf/renderer'
 import { PdfDocumentView } from "@/components/documents/PdfDocumentView"
@@ -87,10 +87,17 @@ export function DocumentCard({ doc, onView, onDelete, onLink }: DocumentCardProp
                     </div>
                 </div>
 
-                {/* Actions Dropdown Placeholder (could use Radix UI Dropdown) */}
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="p-1 hover:bg-gray-100 rounded-md text-gray-400 hover:text-gray-600">
-                        <MoreVertical className="h-4 w-4" />
+                {/* Actions */}
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity z-20 relative">
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            onDelete(doc.id, doc.type)
+                        }}
+                        className="p-1 hover:bg-gray-100 rounded-md text-gray-400 hover:text-red-600 transition-colors"
+                        title="Delete Document"
+                    >
+                        <Trash2 className="h-4 w-4" />
                     </button>
                 </div>
             </div>
