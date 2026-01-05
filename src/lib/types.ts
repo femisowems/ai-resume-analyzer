@@ -142,3 +142,39 @@ export interface JobActivity {
     metadata?: Json
     created_at: string
 }
+
+// --- Document Intelligence Types ---
+
+export interface DocumentAnalysis {
+    tone: 'formal' | 'casual' | 'confident' | 'urgent' | 'neutral'
+    personalization_score: number // 0-100
+    improvement_suggestions: string[]
+    key_strengths: string[]
+}
+
+export interface DocumentJobLink {
+    id: string
+    document_id: string
+    job_application_id: string
+    created_at: string
+    // Joined fields
+    job_application?: {
+        company_name: string
+        role: string // Mapped from job_title in DB usually, but DB has job_title
+        status: JobStatus
+    }
+}
+
+export interface Document {
+    id: string
+    user_id: string
+    type: 'cover_letter' | 'thank_you' | 'linkedin' // Resumes are separate table currently, though we might want to unify concept in UI
+    title: string
+    content: string
+    status: 'draft' | 'active' | 'archived' | 'template'
+    ai_analysis?: DocumentAnalysis
+    last_used_at?: string
+    reuse_count: number
+    created_at: string
+    links?: DocumentJobLink[]
+}

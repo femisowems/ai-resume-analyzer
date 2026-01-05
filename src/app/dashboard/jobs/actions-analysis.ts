@@ -20,8 +20,9 @@ export async function triggerJobAnalysis(jobId: string) {
         .eq('id', jobId)
         .single()
 
-    if (!job || !job.description) {
-        throw new Error('Job description missing or not found')
+    if (!job || !job.job_description) {
+        console.warn(`Skipping analysis for job ${jobId}: Description missing`)
+        return null
     }
 
     // 2. Resolve Resume Content
@@ -38,7 +39,7 @@ export async function triggerJobAnalysis(jobId: string) {
     }
 
     // 3. Analyze
-    const analysis = await analyzeJobMatch(resumeText, job.description)
+    const analysis = await analyzeJobMatch(resumeText, job.job_description)
 
     // 4. Save Result
     const { error } = await supabase

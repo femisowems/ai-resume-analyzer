@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
     DndContext,
     DragOverlay,
@@ -113,6 +113,28 @@ export function PipelineBoard({ onJobClick }: PipelineBoardProps) {
                 // Revert? (In a real app, yes. For now, we trust optimistic)
             }
         }
+    }
+
+    const [mounted, setMounted] = useState(false)
+
+    useEffect(() => {
+        setMounted(true)
+    }, [])
+
+    if (!mounted) {
+        return (
+            <div className="flex h-full gap-6 overflow-x-auto pb-4 items-start min-w-[1400px]">
+                {COLUMNS.map(col => (
+                    <PipelineColumn
+                        key={col.id}
+                        id={col.id}
+                        title={col.title}
+                        jobs={jobs.filter(j => j.status === col.id)}
+                        onJobClick={onJobClick}
+                    />
+                ))}
+            </div>
+        )
     }
 
     return (

@@ -2,23 +2,23 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { AnalysisResult, StructuredResumeContent } from "@/lib/types";
 
 if (!process.env.GEMINI_API_KEY) {
-    throw new Error("Missing GEMINI_API_KEY environment variable");
+  throw new Error("Missing GEMINI_API_KEY environment variable");
 }
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
 
 // The response from Gemini combines analysis + structured content in one JSON
 export interface GeminiAnalysisResponse extends AnalysisResult {
-    structured_resume: StructuredResumeContent;
+  structured_resume: StructuredResumeContent;
 }
 
 export async function analyzeResumeWithGemini(
-    resumeText: string,
-    jobDescription?: string
+  resumeText: string,
+  jobDescription?: string
 ): Promise<GeminiAnalysisResponse> {
-    const prompt = `
+  const prompt = `
     You are an expert Executive Resume Writer and Hiring Manager at a FAANG company.
     Analyze the following resume text ${jobDescription ? "targeting the provided Job Description" : "for a general software engineering role"}.
 
@@ -87,27 +87,27 @@ export async function analyzeResumeWithGemini(
     }
   `;
 
-    try {
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text();
+  try {
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
 
-        // Clean potential markdown fencing
-        const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    // Clean potential markdown fencing
+    const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
 
-        return JSON.parse(cleanJson) as GeminiAnalysisResponse;
-    } catch (error) {
-        console.error("Gemini Analysis Error:", error);
-        throw new Error("Failed to analyze resume with Gemini");
-    }
+    return JSON.parse(cleanJson) as GeminiAnalysisResponse;
+  } catch (error) {
+    console.error("Gemini Analysis Error:", error);
+    throw new Error("Failed to analyze resume with Gemini");
+  }
 }
 
 export async function suggestImprovement(
-    originalText: string,
-    instruction: string,
-    context: 'impact' | 'tone' | 'conciseness'
+  originalText: string,
+  instruction: string,
+  context: 'impact' | 'tone' | 'conciseness'
 ): Promise<string[]> {
-    const prompt = `
+  const prompt = `
     You are a professional resume editor.
     Task: Rewrite the following text to match the instruction: "${instruction}".
     Focus on: ${context}.
@@ -121,9 +121,58 @@ export async function suggestImprovement(
     }
   `;
 
+  const result = await model.generateContent(prompt);
+  const text = result.response.text();
+  const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
+  const data = JSON.parse(cleanJson);
+  return data.options;
+}
+
+export async function analyzeDocumentHealth(
+  content: string,
+  type: string,
+  context?: string
+): Promise<import("@/lib/types").DocumentAnalysis> {
+  const prompt = `
+    You are an expert Career Coach and Document Analyst.
+    Analyze this ${type} for a job search context.
+    Determine its tone, personalization depth, and reusability.
+
+    Document Content:
+    """
+    ${content.slice(0, 50000)}
+    """
+
+    ${context ? `
+    Context (Linked Job Description or Role):
+    """
+    ${context.slice(0, 10000)}
+    """
+    ` : ''}
+
+    Output JSON constraint:
+    {
+      "tone": "formal" | "casual" | "confident" | "urgent" | "neutral",
+      "personalization_score": number (0-100),
+      "improvement_suggestions": ["string" (concise actionable tip)],
+      "key_strengths": ["string" (what works well)]
+    }
+  `;
+
+  try {
     const result = await model.generateContent(prompt);
-    const text = result.response.text();
+    const response = await result.response;
+    const text = response.text();
     const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
-    const data = JSON.parse(cleanJson);
-    return data.options;
+    return JSON.parse(cleanJson);
+  } catch (error) {
+    console.error("Gemini Document Analysis Error:", error);
+    // Return a fallback so the UI doesn't break
+    return {
+      tone: "neutral",
+      personalization_score: 50,
+      improvement_suggestions: ["AI analysis failed. Please try again."],
+      key_strengths: []
+    };
+  }
 }
