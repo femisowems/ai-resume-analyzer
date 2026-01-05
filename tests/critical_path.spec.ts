@@ -22,7 +22,7 @@ test.describe('Critical Path: Job Application Lifecycle', () => {
 
         // If we are redirected to login, this test passes as "Security Working"
         if (page.url().includes('login')) {
-            const loginHeader = page.getByRole('heading', { name: /sign in/i });
+            const loginHeader = page.getByRole('heading', { name: /welcome to careerai/i });
             await expect(loginHeader).toBeVisible();
             return;
         }
