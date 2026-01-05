@@ -1,4 +1,7 @@
--- Create a function to aggregate resume stats efficiently in DB
+-- Re-apply the fix for ambiguous title and max(jsonb) error
+-- This supercedes 20260105, 20260106 v2/v3 by being applied last
+DROP FUNCTION IF EXISTS get_resume_stats(uuid);
+
 create or replace function get_resume_stats(userid uuid)
 returns table (
   id uuid,

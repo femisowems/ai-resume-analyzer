@@ -31,14 +31,16 @@ export default function ResumesClient({ resumes, bestResume }: ResumesClientProp
     const [comparisonResult, setComparisonResult] = useState<any>(null)
     const [isComparing, setIsComparing] = useState(false)
     const [analyzingIds, setAnalyzingIds] = useState<Set<string>>(new Set())
+    const [error, setError] = useState<string | null>(null)
 
     const handleAnalyze = async (resumeId: string) => {
         setAnalyzingIds(prev => new Set(prev).add(resumeId))
+        setError(null)
         try {
             await analyzeResumeAction(resumeId)
         } catch (e) {
             console.error(e)
-            alert("Analysis failed. Please try again.")
+            setError("Analysis failed. Please ensure the resume file is valid.")
         } finally {
             setAnalyzingIds(prev => {
                 const next = new Set(prev)
@@ -56,17 +58,19 @@ export default function ResumesClient({ resumes, bestResume }: ResumesClientProp
                 setSelectedIds([...selectedIds, id])
             }
         }
+        setError(null)
     }
 
     const handleCompare = async () => {
         if (selectedIds.length !== 2) return
         setIsComparing(true)
+        setError(null)
         try {
             const result = await compareResumesAction(selectedIds[0], selectedIds[1])
             setComparisonResult(result)
-        } catch (e) {
+        } catch (e: any) {
             console.error(e)
-            alert("Failed to compare resumes")
+            setError(e.message || "Failed to compare resumes. Please try again.")
         } finally {
             setIsComparing(false)
         }
@@ -88,15 +92,21 @@ export default function ResumesClient({ resumes, bestResume }: ResumesClientProp
                             <button
                                 onClick={handleCompare}
                                 disabled={selectedIds.length !== 2 || isComparing}
-                                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all"
                             >
-                                {isComparing ? 'Analyzing...' : 'Run Comparison'}
+                                {isComparing ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                                        Analyzing...
+                                    </>
+                                ) : 'Run Comparison'}
                             </button>
                             <button
                                 onClick={() => {
                                     setIsCompareMode(false)
                                     setSelectedIds([])
                                     setComparisonResult(null)
+                                    setError(null)
                                 }}
                                 className="inline-flex items-center p-2 border border-gray-300 shadow-sm rounded-md text-gray-700 bg-white hover:bg-gray-50"
                             >
@@ -125,54 +135,122 @@ export default function ResumesClient({ resumes, bestResume }: ResumesClientProp
                 </div>
             </div>
 
+            {error && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3 text-red-700">
+                    <div className="flex-shrink-0 w-5 h-5 rounded-full bg-red-100 flex items-center justify-center border border-red-200">
+                        !
+                    </div>
+                    <p className="text-sm font-medium">{error}</p>
+                    <button onClick={() => setError(null)} className="ml-auto text-red-500 hover:text-red-700">
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
+            )}
+
             {/* Comparison Modal / View */}
             {comparisonResult && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
-                    <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6 md:p-8">
+                    <div className="bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto p-6 md:p-8">
                         <div className="flex justify-between items-start mb-6">
-                            <h2 className="text-2xl font-bold text-gray-900">Resume Comparison Analysis</h2>
+                            <div>
+                                <h2 className="text-2xl font-bold text-gray-900">Comparison Results</h2>
+                                <p className="text-sm text-gray-500 mt-1">
+                                    Winner: <span className="font-bold text-indigo-600">{comparisonResult.winner_id === 'A' ? 'Resume A' : comparisonResult.winner_id === 'B' ? 'Resume B' : 'Tie'}</span>
+                                </p>
+                            </div>
                             <button onClick={() => setComparisonResult(null)} className="text-gray-400 hover:text-gray-600">
                                 <X className="w-6 h-6" />
                             </button>
                         </div>
 
-                        <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-4 mb-8">
-                            <h3 className="font-semibold text-indigo-900 mb-2">Summary</h3>
-                            <p className="text-indigo-800 leading-relaxed">{comparisonResult.summary}</p>
+                        <div className="bg-indigo-50 border-l-4 border-indigo-500 p-4 mb-8">
+                            <h3 className="font-semibold text-indigo-900 mb-1">Executive Summary</h3>
+                            <p className="text-indigo-800 leading-relaxed text-sm">{comparisonResult.summary}</p>
+                            <div className="mt-3 pt-3 border-t border-indigo-100">
+                                <p className="text-xs font-bold uppercase tracking-wider text-indigo-400 mb-1">Rationale</p>
+                                <p className="text-indigo-900 text-sm">{comparisonResult.rationale}</p>
+                            </div>
                         </div>
 
-                        <div className="bg-green-50 border border-green-100 rounded-lg p-4 mb-8">
-                            <h3 className="font-semibold text-green-900 mb-2">Recommendation</h3>
-                            <p className="text-green-800 leading-relaxed font-medium">{comparisonResult.recommendation}</p>
+                        <div className="grid md:grid-cols-2 gap-6 mb-8">
+                            <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="font-bold text-gray-900">Resume A Strengths</h3>
+                                    {comparisonResult.winner_id === 'A' && <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-bold">WINNER</span>}
+                                </div>
+                                <ul className="space-y-2">
+                                    {comparisonResult.resume_a_strengths?.map((s: string, i: number) => (
+                                        <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
+                                            <span className="text-green-500 mt-0.5">✓</span>
+                                            {s}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                            <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="font-bold text-gray-900">Resume B Strengths</h3>
+                                    {comparisonResult.winner_id === 'B' && <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-bold">WINNER</span>}
+                                </div>
+                                <ul className="space-y-2">
+                                    {comparisonResult.resume_b_strengths?.map((s: string, i: number) => (
+                                        <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
+                                            <span className="text-green-500 mt-0.5">✓</span>
+                                            {s}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
                         </div>
+
+                        {comparisonResult.ats_risks && comparisonResult.ats_risks.length > 0 && (
+                            <div className="bg-orange-50 border border-orange-100 rounded-lg p-4 mb-8">
+                                <h3 className="font-semibold text-orange-900 mb-2 flex items-center gap-2">
+                                    <span className="text-lg">⚠️</span> ATS Risks Detected
+                                </h3>
+                                <ul className="list-disc list-inside text-sm text-orange-800 space-y-1">
+                                    {comparisonResult.ats_risks.map((risk: string, i: number) => (
+                                        <li key={i}>{risk}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
 
                         <div className="space-y-4">
-                            <h3 className="font-semibold text-gray-900">Key Differences</h3>
+                            <h3 className="font-semibold text-gray-900 border-b pb-2">Detailed Differences</h3>
                             <div className="grid gap-4">
                                 {comparisonResult.differences.map((diff: any, idx: number) => (
-                                    <div key={idx} className="border border-gray-200 rounded-lg p-4 flex flex-col md:flex-row gap-4">
+                                    <div key={idx} className="border border-gray-200 rounded-lg p-4 flex flex-col md:flex-row gap-4 bg-gray-50/50">
                                         <div className="w-full md:w-1/4">
-                                            <span className="inline-block px-2 py-1 bg-gray-100 text-gray-600 text-xs font-bold rounded uppercase tracking-wider">
+                                            <span className="inline-block px-2 py-1 bg-white border border-gray-200 text-gray-600 text-xs font-bold rounded uppercase tracking-wider shadow-sm">
                                                 {diff.category}
                                             </span>
                                             <div className="mt-2 text-sm font-medium text-gray-500">
-                                                Winner: <span className={diff.winner === 'A' ? 'text-blue-600' : diff.winner === 'B' ? 'text-purple-600' : 'text-gray-600'}>
+                                                Advantage: <span className={diff.winner === 'A' ? 'text-blue-600 font-bold' : diff.winner === 'B' ? 'text-purple-600 font-bold' : 'text-gray-600'}>
                                                     {diff.winner === 'A' ? 'Resume A' : diff.winner === 'B' ? 'Resume B' : 'Tie'}
                                                 </span>
                                             </div>
                                         </div>
                                         <div className="flex-1 grid md:grid-cols-2 gap-4">
-                                            <div className="bg-gray-50 p-3 rounded text-sm relative">
+                                            <div className="bg-white p-3 rounded border border-gray-100 text-sm relative shadow-sm">
                                                 <div className="absolute top-1 right-2 text-xs font-bold text-gray-300">A</div>
-                                                {diff.resume_a_notes}
+                                                <p className="text-gray-600 mt-1">{diff.resume_a_notes}</p>
                                             </div>
-                                            <div className="bg-gray-50 p-3 rounded text-sm relative">
+                                            <div className="bg-white p-3 rounded border border-gray-100 text-sm relative shadow-sm">
                                                 <div className="absolute top-1 right-2 text-xs font-bold text-gray-300">B</div>
-                                                {diff.resume_b_notes}
+                                                <p className="text-gray-600 mt-1">{diff.resume_b_notes}</p>
                                             </div>
                                         </div>
                                     </div>
                                 ))}
+                            </div>
+                        </div>
+
+                        <div className="mt-8 p-4 bg-green-50 rounded-lg border border-green-100 flex gap-4">
+                            <div className="text-2xl">💡</div>
+                            <div>
+                                <h3 className="font-bold text-green-900 mb-1">Final Recommendation</h3>
+                                <p className="text-green-800 text-sm leading-relaxed">{comparisonResult.recommendation}</p>
                             </div>
                         </div>
                     </div>
@@ -214,7 +292,12 @@ export default function ResumesClient({ resumes, bestResume }: ResumesClientProp
                                 />
                             </div>
                         )}
-                        <div className={selectedIds.includes(resume.id) ? 'ring-2 ring-indigo-500 rounded-xl' : ''}>
+                        <div
+                            className={`transition-all duration-200 ${selectedIds.includes(resume.id)
+                                    ? 'ring-2 ring-indigo-500 rounded-xl transform scale-[1.02] shadow-md'
+                                    : isCompareMode ? 'opacity-70 hover:opacity-100' : ''
+                                }`}
+                        >
                             <ResumeStatsCard
                                 resume={{
                                     id: resume.id,

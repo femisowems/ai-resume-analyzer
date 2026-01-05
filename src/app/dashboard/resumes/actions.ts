@@ -106,10 +106,13 @@ export async function uploadResume(formData: FormData) {
 import { compareResumesWithGemini } from '@/lib/gemini'
 
 export async function compareResumesAction(resumeIdA: string, resumeIdB: string) {
-    // ... existing setup ...
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Unauthorized')
+
+    if (resumeIdA === resumeIdB) {
+        throw new Error('Cannot compare a resume to itself')
+    }
 
     // Fetch both resumes with their CURRENT version content
     const { data: resumes } = await supabase
@@ -122,7 +125,7 @@ export async function compareResumesAction(resumeIdA: string, resumeIdB: string)
         .in('id', [resumeIdA, resumeIdB])
         .eq('user_id', user.id)
 
-    if (!resumes || resumes.length !== 2) throw new Error('Resumes not found')
+    if (!resumes || resumes.length !== 2) throw new Error('Resumes not found or you do not have permission')
 
     const resumeA = resumes.find(r => r.id === resumeIdA)
     const resumeB = resumes.find(r => r.id === resumeIdB)
@@ -138,7 +141,30 @@ export async function compareResumesAction(resumeIdA: string, resumeIdB: string)
     const textA = contentA?.raw_text || JSON.stringify(contentA) || ''
     const textB = contentB?.raw_text || JSON.stringify(contentB) || ''
 
-    return await compareResumesWithGemini(textA, textB)
+    // Check if we have enough text
+    if (textA.length < 50 || textB.length < 50) {
+        throw new Error('One or more resumes do not have enough text to analyze. Please ensure they are properly parsed.')
+    }
+
+    // Call Gemini
+    const result = await compareResumesWithGemini(textA, textB)
+
+    // Save to DB
+    const { error: saveError } = await supabase
+        .from('resume_comparisons')
+        .insert({
+            user_id: user.id,
+            resume_a_id: resumeIdA,
+            resume_b_id: resumeIdB,
+            result: result
+        })
+
+    if (saveError) {
+        console.error("Failed to save comparison to DB", saveError)
+        // We don't block the UI for this, but good to know
+    }
+
+    return result
 }
 
 export async function improveResumeSection(resumeId: string, sectionName: string, instruction: string) {

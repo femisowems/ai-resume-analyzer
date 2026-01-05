@@ -1,26 +1,72 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { AnalysisResult, StructuredResumeContent } from "@/lib/types";
+import OpenAI from "openai";
 
-if (!process.env.GEMINI_API_KEY) {
-  throw new Error("Missing GEMINI_API_KEY environment variable");
+// Initialize Gemini
+// We allow missing key here if we have OpenAI key, checked below or at runtime
+const genAI = process.env.GEMINI_API_KEY
+  ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+  : null;
+
+// Initialize OpenAI Fallback
+const openai = process.env.OPENAI_API_KEY
+  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  : null;
+
+// Verify at least one is available
+if (!genAI && !openai) {
+  throw new Error("Missing both GEMINI_API_KEY and OPENAI_API_KEY. At least one is required.");
 }
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// Helper for OpenAI 1:1 parity with Gemini response structure
+function mockGeminiResponse(text: string) {
+  return {
+    response: {
+      text: () => text
+    }
+  };
+}
 
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+const model = genAI ? genAI.getGenerativeModel({ model: "gemini-pro" }) : null;
 
-async function generateWithRetry(prompt: string, retries = 3) {
-  for (let i = 0; i < retries; i++) {
-    try {
-      const result = await model.generateContent(prompt);
-      return result;
-    } catch (error) {
-      if (i === retries - 1) throw error;
-      // Exponential backoff: 1s, 2s, 4s
-      await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, i)));
+async function generateWithRetry(prompt: string, retries = 3): Promise<any> {
+  // 1. Try Gemini first (if configured)
+  if (model) {
+    for (let i = 0; i < retries; i++) {
+      try {
+        const result = await model.generateContent(prompt);
+        return result;
+      } catch (error: any) {
+        console.warn(`Gemini attempt ${i + 1} failed:`, error.message);
+        if (i === retries - 1) {
+          // Start Fallback flow below
+          console.log("All Gemini retries failed. Attempting OpenAI fallback...");
+        } else {
+          await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, i)));
+        }
+      }
     }
   }
-  throw new Error("Failed to generate content after retries");
+
+  // 2. Fallback to OpenAI (if configured)
+  if (openai) {
+    try {
+      console.log("Using OpenAI Fallback for generation...");
+      const completion = await openai.chat.completions.create({
+        messages: [{ role: "user", content: prompt }],
+        model: "gpt-4o", // Strongest model for complex JSON tasks
+        response_format: { type: "json_object" }, // Enforce JSON since our prompts expect it
+      });
+
+      const content = completion.choices[0].message.content || "";
+      return mockGeminiResponse(content);
+    } catch (error: any) {
+      console.error("OpenAI Fallback failed:", error);
+      throw new Error(`AI Generation failed on both providers. Last error: ${error.message}`);
+    }
+  }
+
+  throw new Error("Failed to generate content: Gemini failed and OpenAI is not configured.");
 }
 
 // The response from Gemini combines analysis + structured content in one JSON
@@ -198,53 +244,94 @@ export async function analyzeDocumentHealth(
 
 export interface ComparisonResult {
   summary: string;
+  winner_id: 'A' | 'B' | 'Tie';
+  rationale: string;
   differences: {
     category: string;
     resume_a_notes: string;
     resume_b_notes: string;
     winner: 'A' | 'B' | 'Tie';
   }[];
+  resume_a_strengths: string[];
+  resume_b_strengths: string[];
+  ats_risks: string[];
+  keyword_coverage: {
+    resume_a_score: number;
+    resume_b_score: number;
+    shared_keywords: string[];
+    missing_from_a: string[];
+    missing_from_b: string[];
+  };
   recommendation: string;
 }
 
 export async function compareResumesWithGemini(resumeAText: string, resumeBText: string): Promise<ComparisonResult> {
   const prompt = `
-    You are a Senior Recruiter comparing two resumes for a tech role.
-    Compare Resume A and Resume B.
+    You are a Senior Technical Recruiter and Engineering Manager comparing two resumes for a general Senior Software Engineer role.
+    Compare Resume A and Resume B in depth.
 
-    Output JSON constraint:
-    {
-      "summary": "Brief overview of how they compare (2 sentences).",
-      "differences": [
-        {
-          "category": "string (e.g., Impact Metrics, Skill Coverage, Formatting)",
-          "resume_a_notes": "string",
-          "resume_b_notes": "string",
-          "winner": "A" | "B" | "Tie"
-        }
-      ],
-      "recommendation": "Which resume is better for a general Senior Software Engineer role and why?"
-    }
+    **Goal**: Determine which candidate is effectively stronger and why.
+
+    **Constraint 1**: Output strictly valid JSON. No markdown.
+    **Constraint 2**: detailed rationale is required.
 
     Resume A:
     """
-    ${resumeAText.slice(0, 10000)}
+    ${resumeAText.slice(0, 15000)}
     """
 
     Resume B:
     """
-    ${resumeBText.slice(0, 10000)}
+    ${resumeBText.slice(0, 15000)}
     """
+
+    Output JSON schema:
+    {
+      "summary": "2-3 sentence executive summary of the comparison.",
+      "winner_id": "A" | "B" | "Tie",
+      "rationale": "Detailed explanation of why the winner was chosen.",
+      "differences": [
+        {
+          "category": "Impact & Metrics" | "Technical Depth" | "Communication & Clarity" | "Education & Background",
+          "resume_a_notes": "Specific observation about A",
+          "resume_b_notes": "Specific observation about B",
+          "winner": "A" | "B" | "Tie"
+        }
+      ],
+      "resume_a_strengths": ["string", "string"],
+      "resume_b_strengths": ["string", "string"],
+      "ats_risks": ["string (e.g. bad formatting, complex columns, missing keywords)"],
+      "keyword_coverage": {
+        "resume_a_score": number (0-100),
+        "resume_b_score": number (0-100),
+        "shared_keywords": ["string"],
+        "missing_from_a": ["string"],
+        "missing_from_b": ["string"]
+      },
+      "recommendation": "Final actionable advice for the user (e.g. 'Use Resume A for startups, Resume B for corporate')."
+    }
   `;
 
   try {
     const result = await generateWithRetry(prompt);
     const response = await result.response;
-    const cleanJson = response.text().replace(/```json/g, '').replace(/```/g, '').trim();
-    return JSON.parse(cleanJson);
-  } catch (error) {
+    const text = response.text();
+
+    // Log sample for debugging if needed (remove in prod if sensitive)
+    // console.log("Gemini Response:", text.slice(0, 500)); 
+
+    const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
+
+    try {
+      return JSON.parse(cleanJson);
+    } catch (e) {
+      console.error("JSON Parse Error. Raw Text:", text); // Critical for debugging
+      throw new Error("Received invalid JSON from Gemini");
+    }
+  } catch (error: any) {
     console.error("Gemini Comparison Error:", error);
-    throw new Error("Failed to compare resumes with Gemini");
+    // Propagate the specific error message
+    throw new Error(`Gemini Comparison Failed: ${error.message || 'Unknown error'}`);
   }
 }
 
