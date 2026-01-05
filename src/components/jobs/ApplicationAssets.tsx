@@ -1,6 +1,6 @@
 'use client'
 
-import { ApplicationAssetsData, ContextAction, DocumentType, JobDocument } from '@/lib/types'
+import type { ApplicationAssetsData, ContextAction, DocumentType, JobDocument } from '@/lib/types'
 import { ResumeAnchor } from './ResumeAnchor'
 import { RequiredDocuments } from './RequiredDocuments'
 import { PostInterviewDocuments } from './PostInterviewDocuments'
@@ -34,7 +34,7 @@ export function ApplicationAssets({ jobId, jobStage, assetsData }: ApplicationAs
             const result = await changeJobResume(jobId, versionId)
 
             if (result.success) {
-                toast.success(result.summary, { id: 'change-resume', duration: 5000 })
+                toast.success(result.summary, { id: 'change-resume' })
                 router.refresh()
             }
         } catch (error) {

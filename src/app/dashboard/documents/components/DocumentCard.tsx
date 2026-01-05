@@ -40,8 +40,8 @@ export function DocumentCard({ doc, onView, onDelete, onLink }: DocumentCardProp
         try {
             const blob = await pdf(
                 <PdfDocumentView
-                    title={doc.title}
-                    content={doc.content}
+                    title={doc.title || ''}
+                    content={doc.content || ''}
                     jobTitle={doc.jobTitle || ''}
                     companyName={doc.companyName || ''}
                 />
