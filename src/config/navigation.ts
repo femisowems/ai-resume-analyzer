@@ -1,5 +1,5 @@
 
-import { LayoutDashboard, FileText, Briefcase, File, User, type LucideIcon } from 'lucide-react'
+import { LayoutDashboard, FileText, Briefcase, File, User, BarChart, type LucideIcon } from 'lucide-react'
 
 export interface NavigationItem {
     name: string
@@ -29,6 +29,11 @@ export const MAIN_NAVIGATION: NavigationItem[] = [
         name: 'Documents',
         href: '/dashboard/documents',
         icon: File
+    },
+    {
+        name: 'Analytics',
+        href: '/dashboard/analytics',
+        icon: BarChart
     },
 ]
 
