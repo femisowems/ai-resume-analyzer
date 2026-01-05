@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import DashboardNavigation from '@/components/DashboardNavigation'
+import { CommandMenu } from '@/components/CommandMenu'
 
 
 export default async function DashboardLayout({
@@ -18,6 +19,7 @@ export default async function DashboardLayout({
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col text-gray-900">
+            <CommandMenu />
             <DashboardNavigation userEmail={user.email} />
 
             <main className="flex-1 max-w-7xl w-full mx-auto py-6 sm:px-6 lg:px-8">
@@ -29,6 +31,7 @@ export default async function DashboardLayout({
                     <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
                         <div className="text-sm text-gray-500">
                             © {new Date().getFullYear()} CareerAI. Built with Next.js, Supabase & OpenAI.
+                            <span className="ml-2 text-xs text-gray-400">(Press Cmd+K to search)</span>
                         </div>
                         <div className="flex space-x-6 text-sm">
                             <Link href="/dashboard" className="text-gray-500 hover:text-indigo-600 transition">

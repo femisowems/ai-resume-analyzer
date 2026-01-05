@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { FileText, Mail, Linkedin, Trash2, LayoutGrid, AlertTriangle, Eye, X, Copy, Check, ArrowUpDown, Filter } from 'lucide-react'
-import { DocumentItem, deleteDocument } from './actions'
+import { FileText, Mail, Linkedin, Trash2, LayoutGrid, AlertTriangle, Eye, X, Copy, Check, ArrowUpDown, Filter, Pencil, Save, RefreshCw } from 'lucide-react'
+import { DocumentItem, deleteDocument, updateDocument } from './actions'
+import { DocumentEditor } from '@/components/documents/DocumentEditor'
 
 interface DocumentsClientProps {
     documents: DocumentItem[]
@@ -16,6 +17,8 @@ export default function DocumentsClient({ documents }: DocumentsClientProps) {
     const [viewingDoc, setViewingDoc] = useState<DocumentItem | null>(null)
     const [deletingDoc, setDeletingDoc] = useState<{ id: string; type: string } | null>(null)
     const [isDeleting, setIsDeleting] = useState(false)
+    const [isEditing, setIsEditing] = useState(false)
+    const [isSaving, setIsSaving] = useState(false)
     const [copied, setCopied] = useState(false)
     // Extract unique job titles (Global)
     const jobTitles = useMemo(() => {
@@ -60,6 +63,22 @@ export default function DocumentsClient({ documents }: DocumentsClientProps) {
         navigator.clipboard.writeText(viewingDoc.content)
         setCopied(true)
         setTimeout(() => setCopied(false), 2000)
+    }
+
+    const handleSave = async (newContent: string) => {
+        if (!viewingDoc) return
+        setIsSaving(true)
+        try {
+            await updateDocument(viewingDoc.id, newContent)
+            // Optimistic update
+            setViewingDoc({ ...viewingDoc, content: newContent })
+            setIsEditing(false)
+        } catch (error) {
+            console.error('Failed to update document', error)
+            alert('Failed to save document changes')
+        } finally {
+            setIsSaving(false)
+        }
     }
 
     const getIcon = (type: string) => {
@@ -352,7 +371,12 @@ export default function DocumentsClient({ documents }: DocumentsClientProps) {
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
                     <div
                         className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm transition-opacity"
-                        onClick={() => setViewingDoc(null)}
+                        onClick={() => {
+                            if (!isEditing) {
+                                setViewingDoc(null)
+                                setIsEditing(false)
+                            }
+                        }}
                     />
                     <div className="relative w-full max-w-2xl bg-white rounded-xl shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
                         {/* Modal Header */}
@@ -368,97 +392,130 @@ export default function DocumentsClient({ documents }: DocumentsClientProps) {
                                     </p>
                                 )}
                             </div>
-                            <button
-                                onClick={() => setViewingDoc(null)}
-                                className="text-gray-400 hover:text-gray-600 transition"
-                            >
-                                <X className="h-6 w-6" />
-                            </button>
+                            <div className="flex gap-2">
+                                {!isEditing && viewingDoc.type !== 'resume' && (
+                                    <button
+                                        onClick={() => setIsEditing(true)}
+                                        className="p-2 text-gray-500 hover:text-indigo-600 hover:bg-gray-100 rounded-lg transition"
+                                        title="Edit Document"
+                                    >
+                                        <Pencil className="h-5 w-5" />
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => {
+                                        setViewingDoc(null)
+                                        setIsEditing(false)
+                                    }}
+                                    className="p-2 text-gray-400 hover:text-gray-600 transition"
+                                >
+                                    <X className="h-6 w-6" />
+                                </button>
+                            </div>
                         </div>
 
                         {/* Modal Content */}
-                        <div className="p-6 overflow-y-auto flex-1">
-                            <div className="bg-gray-50 rounded-lg p-6 border border-gray-100">
-                                <pre className="whitespace-pre-wrap font-sans text-sm text-gray-800 leading-relaxed">
-                                    {viewingDoc.content}
-                                </pre>
-                            </div>
+                        <div className="p-0 overflow-y-auto flex-1 bg-gray-50 flex flex-col min-h-[400px]">
+                            {isEditing ? (
+                                <DocumentEditor
+                                    initialContent={viewingDoc.content || ''}
+                                    onSave={handleSave}
+                                    onCancel={() => setIsEditing(false)}
+                                />
+                            ) : (
+                                <div className="p-6">
+                                    <div className="bg-white rounded-lg p-8 border border-gray-200 shadow-sm min-h-[400px]">
+                                        <pre className="whitespace-pre-wrap font-sans text-sm text-gray-800 leading-relaxed max-w-none">
+                                            {viewingDoc.content}
+                                        </pre>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Modal Footer */}
-                        <div className="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50 rounded-b-xl">
-                            <button
-                                onClick={handleCopy}
-                                className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition shadow-sm"
-                            >
-                                {copied ? (
-                                    <>
-                                        <Check className="h-4 w-4 mr-2 text-green-600" />
-                                        Copied
-                                    </>
-                                ) : (
-                                    <>
-                                        <Copy className="h-4 w-4 mr-2" />
-                                        Copy Text
-                                    </>
-                                )}
-                            </button>
-                            <button
-                                onClick={() => setViewingDoc(null)}
-                                className="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 transition shadow-sm"
-                            >
-                                Close
-                            </button>
-                        </div>
+                        {!isEditing && (
+                            <div className="flex justify-between items-center px-6 py-4 border-t bg-white rounded-b-xl z-10">
+                                <span className="text-xs text-gray-500">
+                                    {viewingDoc.type === 'resume' ? 'Resumes cannot be edited directly.' : 'Click edit icon to make changes.'}
+                                </span>
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={handleCopy}
+                                        className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition shadow-sm"
+                                    >
+                                        {copied ? (
+                                            <>
+                                                <Check className="h-4 w-4 mr-2 text-green-600" />
+                                                Copied
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Copy className="h-4 w-4 mr-2" />
+                                                Copy Text
+                                            </>
+                                        )}
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setViewingDoc(null)
+                                            setIsEditing(false)
+                                        }}
+                                        className="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 transition shadow-sm"
+                                    >
+                                        Close
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
-                </div>
             )}
 
-            {/* Custom Delete Modal */}
-            {deletingDoc && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-0">
-                    <div
-                        className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm transition-opacity"
-                        onClick={() => !isDeleting && setDeletingDoc(null)}
-                    />
+                    {/* Custom Delete Modal */}
+                    {deletingDoc && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-0">
+                            <div
+                                className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm transition-opacity"
+                                onClick={() => !isDeleting && setDeletingDoc(null)}
+                            />
 
-                    <div className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-md animate-in zoom-in-95 duration-200">
-                        <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
-                            <div className="sm:flex sm:items-start">
-                                <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-                                    <AlertTriangle className="h-6 w-6 text-red-600" aria-hidden="true" />
-                                </div>
-                                <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
-                                    <h3 className="text-lg font-semibold leading-6 text-gray-900">Delete {deletingDoc.type === 'resume' ? 'Resume' : 'Document'}?</h3>
-                                    <div className="mt-2">
-                                        <p className="text-sm text-gray-500">
-                                            Are you sure you want to delete this? This action cannot be undone and will permanently remove the data{deletingDoc.type === 'resume' ? ' and file' : ''}.
-                                        </p>
+                            <div className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-md animate-in zoom-in-95 duration-200">
+                                <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                                    <div className="sm:flex sm:items-start">
+                                        <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                                            <AlertTriangle className="h-6 w-6 text-red-600" aria-hidden="true" />
+                                        </div>
+                                        <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+                                            <h3 className="text-lg font-semibold leading-6 text-gray-900">Delete {deletingDoc.type === 'resume' ? 'Resume' : 'Document'}?</h3>
+                                            <div className="mt-2">
+                                                <p className="text-sm text-gray-500">
+                                                    Are you sure you want to delete this? This action cannot be undone and will permanently remove the data{deletingDoc.type === 'resume' ? ' and file' : ''}.
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
+                                </div>
+                                <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                                    <button
+                                        type="button"
+                                        className="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                                        onClick={handleDelete}
+                                        disabled={isDeleting}
+                                    >
+                                        {isDeleting ? 'Deleting...' : 'Delete'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto disabled:opacity-50"
+                                        onClick={() => setDeletingDoc(null)}
+                                        disabled={isDeleting}
+                                    >
+                                        Cancel
+                                    </button>
                                 </div>
                             </div>
                         </div>
-                        <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-                            <button
-                                type="button"
-                                className="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
-                                onClick={handleDelete}
-                                disabled={isDeleting}
-                            >
-                                {isDeleting ? 'Deleting...' : 'Delete'}
-                            </button>
-                            <button
-                                type="button"
-                                className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto disabled:opacity-50"
-                                onClick={() => setDeletingDoc(null)}
-                                disabled={isDeleting}
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
+                    )}
                 </div>
-            )}
-        </div>
-    )
-}
+            )
+            }

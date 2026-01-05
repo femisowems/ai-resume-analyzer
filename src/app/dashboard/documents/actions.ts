@@ -435,3 +435,28 @@ export async function generateLinkedInAction(resumeId: string, targetRole: strin
     const resumeText = resume.content?.text || ''
     return optimizeLinkedIn(resumeText, targetRole)
 }
+
+export async function updateDocument(id: string, content: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        throw new Error('Not authenticated')
+    }
+
+    const { error } = await supabase
+        .from('documents')
+        .update({
+            content,
+            last_used_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .eq('user_id', user.id)
+
+    if (error) {
+        console.error('Update failed', error)
+        throw new Error(error.message)
+    }
+
+    revalidatePath('/dashboard/documents')
+}
