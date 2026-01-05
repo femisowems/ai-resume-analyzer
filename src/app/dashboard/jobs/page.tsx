@@ -30,6 +30,8 @@ export default async function JobsPage() {
         ...job,
         // Ensure status matches our enum (uppercase)
         status: job.status ? job.status.toUpperCase() : 'SAVED',
+        // Map DB column 'job_title' to frontend type 'role'
+        role: job.job_title || job.role,
         // Ensure arrays are arrays (Supabase might return null for empty json)
         stage_specifics: job.stage_specifics || {},
         analysis_json: job.analysis_json || null

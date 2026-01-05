@@ -93,7 +93,7 @@ export async function createJobApplication(formData: FormData) {
     const insertData: any = {
         user_id: user.id,
         company_name: company,
-        role: role,
+        job_title: role,
         status: status?.toUpperCase() || 'SAVED',
         applied_date: new Date().toISOString()
     }
