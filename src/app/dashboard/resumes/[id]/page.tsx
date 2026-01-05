@@ -6,6 +6,7 @@ import ActionQueue from '@/components/resume-analysis/ActionQueue'
 import KeywordCoverage from '@/components/resume-analysis/KeywordCoverage'
 import StructuredResumeViewer from '@/components/resume-analysis/StructuredResumeViewer'
 import { AnalysisResult, StructuredResumeContent } from '@/lib/types'
+import { addSkillToResume } from './actions'
 
 // Helper to provide safe defaults if data is missing or in old format
 function normalizeAnalysis(analysis: any): AnalysisResult {
@@ -105,21 +106,58 @@ export default async function ResumeDetailPage({ params, searchParams }: { param
     let targetJob = null
     if (jobId && jobs) {
         targetJob = jobs.find(j => j.id === jobId)
+        /**
+         * Real-time Keyword Gap Analysis
+         * Instead of relying on the stored (stale) job analysis which might be compared 
+         * against an old resume, we re-calculate the gap here.
+         */
         if (targetJob && targetJob.analysis_json) {
-            // Merge Job Analysis into Resume Analysis
-            // 1. Override missing keywords
             const jobAnalysis = targetJob.analysis_json
 
-            // We want to show what is missing from the JOB, not just the general resume check
-            const missingFromJob = jobAnalysis.missing_keywords || []
-            const matchedFromJob = jobAnalysis.keywords_matched || []
+            // 1. Reconstruct the "Ideal Keyword List" for this job
+            const requiredKeywords = new Set([
+                ...(jobAnalysis.keywords_matched || []),
+                ...(jobAnalysis.missing_keywords || [])
+            ].map(k => k.toLowerCase()))
 
+            // 2. Get current resume keywords (normalized)
+            const resumeKeywords = new Set(
+                (analysis.keywords.present || []).map(k => k.toLowerCase())
+            )
+
+            // 3. Diff them live
+            const liveMissing: string[] = []
+            const liveMatched: string[] = []
+
+            requiredKeywords.forEach(req => {
+                // Check if resume has it (case-insensitive fuzzy match could go here, but Set is fast)
+                if (resumeKeywords.has(req)) {
+                    liveMatched.push(req) // We capitalize roughly based on input? No, lossy. 
+                    // ideally we find the original casing from the job list.
+                    // For now, let's just push the lowercase or try to find match.
+                } else {
+                    liveMissing.push(req)
+                }
+            })
+
+            // Restore casing (optional polish) - for now just use the string we have. 
+            // Actually, let's be nicer: find the original string from jobAnalysis.
+            const originalMap = new Map<string, string>()
+                ;[...(jobAnalysis.keywords_matched || []), ...(jobAnalysis.missing_keywords || [])].forEach(k => {
+                    originalMap.set(k.toLowerCase(), k)
+                })
+
+            const finalMatched = liveMatched.map(k => originalMap.get(k) || k)
+            const finalMissing = liveMissing.map(k => originalMap.get(k) || k)
+
+            // 4. Override the display
             analysis = {
                 ...analysis,
                 keywords: {
                     ...analysis.keywords,
-                    present: matchedFromJob, // approximate mapping
-                    missing: missingFromJob
+                    present: finalMatched,
+                    missing: finalMissing,
+                    irrelevant: [] // Hiding irrelevant for focused job view
                 }
             }
         }
@@ -175,6 +213,7 @@ export default async function ResumeDetailPage({ params, searchParams }: { param
                         <KeywordCoverage
                             present={analysis.keywords.present}
                             missing={analysis.keywords.missing}
+                            onAddKeyword={addSkillToResume.bind(null, resume.id)}
                         />
 
                     </div>

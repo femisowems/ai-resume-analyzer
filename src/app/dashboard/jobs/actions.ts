@@ -94,7 +94,7 @@ export async function createJobApplication(formData: FormData) {
         user_id: user.id,
         company_name: company,
         role: role,
-        status: status,
+        status: status?.toUpperCase() || 'SAVED',
         applied_date: new Date().toISOString()
     }
 

@@ -80,7 +80,11 @@ export function JobCard({ job, onClick }: JobCardProps) {
             <div className="flex items-center justify-between mt-3">
                 <div className={cn("text-[10px] font-medium px-2 py-0.5 rounded border flex items-center gap-1", getStatusColor())}>
                     <CalendarClock size={12} />
-                    {daysInStage}d in stage
+                    {job.next_action_date ? (
+                        <span>Due {formatDistanceToNow(new Date(job.next_action_date), { addSuffix: true })}</span>
+                    ) : (
+                        <span>{daysInStage}d in stage</span>
+                    )}
                 </div>
 
                 {job.match_score && (
