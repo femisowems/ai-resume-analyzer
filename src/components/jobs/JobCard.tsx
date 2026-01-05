@@ -6,6 +6,7 @@ import { Building2, CalendarClock, MoreHorizontal } from 'lucide-react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { formatDistanceToNow } from 'date-fns'
+import { CompanyLogo } from '@/components/ui/CompanyLogo'
 
 interface JobCardProps {
     job: Job
@@ -57,10 +58,13 @@ export function JobCard({ job, onClick }: JobCardProps) {
         >
             <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-md bg-slate-100 flex items-center justify-center border border-slate-200 text-slate-400">
-                        {/* Fallback logo */}
-                        <Building2 size={20} />
-                    </div>
+                    <CompanyLogo
+                        jobId={job.id}
+                        companyName={job.company_name}
+                        logoUrl={job.company_logo || job.company_logo_cache}
+                        size={40}
+                        className="flex-shrink-0"
+                    />
                     <div>
                         <h3 className="text-sm font-semibold text-slate-900 leading-tight line-clamp-1">{job.role}</h3>
                         <p className="text-xs text-slate-500 font-medium truncate max-w-[120px]">{job.company_name}</p>

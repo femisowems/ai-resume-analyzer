@@ -116,11 +116,21 @@ export interface Suggestion {
 
 export type JobStatus = 'SAVED' | 'APPLIED' | 'RECRUITER_SCREEN' | 'INTERVIEW' | 'OFFER' | 'REJECTED' | 'ARCHIVED';
 
+export interface Company {
+    id: string
+    name: string
+    domain?: string
+    logo_url?: string
+    brandfetch_data?: any
+}
+
 export interface Job {
     id: string
     user_id: string
     company_name: string
-    company_logo?: string
+    company_id?: string // Foreign key to Company
+    company_logo?: string // Direct URL if we have it (or from cache)
+    company_logo_cache?: string // Denormalized cache field
     role: string
     status: JobStatus
     stage_specifics?: {

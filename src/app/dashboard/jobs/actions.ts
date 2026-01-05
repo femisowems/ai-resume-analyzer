@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Job, JobActivity, JobStatus } from '@/lib/types'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { resolveAndLinkCompany } from '@/lib/companies'
 
 export async function updateJobStatus(jobId: string, status: JobStatus) {
     const supabase = await createClient()
@@ -115,6 +116,14 @@ export async function createJobApplication(formData: FormData) {
 
     // Log initial activity
     await addJobActivity(data.id, 'STATUS_CHANGE', `Created application for ${role} at ${company}`, { status })
+
+    // Trigger async company resolution (fire and forget, or await if fast enough)
+    // We await it here to ensure the UI has the logo immediately if possible
+    try {
+        await resolveAndLinkCompany(supabase, data.id, company)
+    } catch (e) {
+        console.error('Background company resolution failed:', e)
+    }
 
     revalidatePath('/dashboard/jobs')
     redirect('/dashboard/jobs')
