@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { generateCoverLetter, generateThankYouEmail, optimizeLinkedIn } from '@/lib/openai'
+// import { generateCoverLetter, generateThankYouEmail, optimizeLinkedIn } from '@/lib/openai'
 import { DocumentAnalysis, JobStatus } from '@/lib/types'
 
 // --- Types ---
@@ -360,7 +360,9 @@ export async function deleteDocument(id: string, type?: string) {
 }
 
 // Keep existing generators but ensure they check for linking if needed or just return text
-// ... existing generator functions ...
+import { generateCoverLetterWithGemini, generateThankYouEmailWithGemini, optimizeLinkedInWithGemini } from '@/lib/gemini'
+
+// ...
 
 export async function generateCoverLetterAction(jobId: string) {
     const supabase = await createClient()
@@ -381,7 +383,7 @@ export async function generateCoverLetterAction(jobId: string) {
 
     if (!resumeText) throw new Error('Resume text is missing.')
 
-    return generateCoverLetter(
+    return generateCoverLetterWithGemini(
         resumeText,
         job.job_title,
         job.company_name,
@@ -412,7 +414,7 @@ export async function generateThankYouAction(
     const content = job.resume_version.content || {}
     const resumeText = content.text || content.raw_text || ''
 
-    return generateThankYouEmail(
+    return generateThankYouEmailWithGemini(
         resumeText,
         job.job_title,
         job.company_name,
@@ -436,8 +438,8 @@ export async function generateLinkedInAction(resumeId: string, targetRole: strin
 
     if (!resume) throw new Error('Resume not found')
 
-    const resumeText = resume.content?.text || ''
-    return optimizeLinkedIn(resumeText, targetRole)
+    const resumeText = resume.content?.text || resume.content?.raw_text || ''
+    return optimizeLinkedInWithGemini(resumeText, targetRole)
 }
 
 export async function updateDocument(id: string, content: string) {

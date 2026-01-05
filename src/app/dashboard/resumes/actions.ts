@@ -102,9 +102,11 @@ export async function uploadResume(formData: FormData) {
     return { success: true, id: resume.id }
 }
 
-import { compareResumes } from '@/lib/openai'
+// import { compareResumes } from '@/lib/openai'
+import { compareResumesWithGemini } from '@/lib/gemini'
 
 export async function compareResumesAction(resumeIdA: string, resumeIdB: string) {
+    // ... existing setup ...
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Unauthorized')
@@ -136,7 +138,7 @@ export async function compareResumesAction(resumeIdA: string, resumeIdB: string)
     const textA = contentA?.raw_text || JSON.stringify(contentA) || ''
     const textB = contentB?.raw_text || JSON.stringify(contentB) || ''
 
-    return await compareResumes(textA, textB)
+    return await compareResumesWithGemini(textA, textB)
 }
 
 export async function improveResumeSection(resumeId: string, sectionName: string, instruction: string) {
@@ -161,22 +163,10 @@ export async function improveResumeSection(resumeId: string, sectionName: string
     const currentContent = currentVersion.content as any
     const sectionText = currentContent[sectionName] || currentContent.structured_content?.[sectionName]
 
-    // If section doesn't exist, we might be creating it, or it's an error.
-    // For now, let's assume valid sections. "structured_content" usually isn't in 'content' root unless we flattened it.
-    // In uploadResume we flattened it:
-    // const initialContent = { summary, ...skills, experience... }
-
-    // So currentContent[sectionName] should work for 'experience', 'summary', etc.
-
-    // TODO: Implement actual AI call for rewriting.
-    // For now, we'll just mock it or throw.
-    // detailed AI implementation for SINGLE SECTION improvement is next.
-    // throw new Error('AI Section Improvement not yet implemented in openai.ts')
-
     // Lazy import to avoid circular dep issues in some envs
-    const { rewriteResumeSection } = await import('@/lib/openai')
+    const { rewriteResumeSectionWithGemini } = await import('@/lib/gemini')
 
-    const newText = await rewriteResumeSection(sectionText, instruction)
+    const newText = await rewriteResumeSectionWithGemini(sectionText, instruction)
 
     // Update the resume content in DB
     // We need to update deeply nested JSON. Ideally use jsonb_set in SQL, but here we fetch-modify-save given we have the full object.
