@@ -128,9 +128,11 @@ export default async function ResumesPage() {
         }
     }))
 
-    const finalBestResume: ResumeWithStats | null = bestResume && (bestResume.stats.applicationsCount > 0 || bestResume.stats.atsScoreAvg > 0)
-        ? finalResumes.find(r => r.id === bestResume?.id) || null
-        : null
+    let finalBestResume: ResumeWithStats | null = null
+    if (bestResume && (bestResume.stats.applicationsCount > 0 || bestResume.stats.atsScoreAvg > 0)) {
+        const bestId = bestResume.id
+        finalBestResume = finalResumes.find(r => r.id === bestId) || null
+    }
 
     return (
         <ResumesClient resumes={finalResumes} bestResume={finalBestResume} />
