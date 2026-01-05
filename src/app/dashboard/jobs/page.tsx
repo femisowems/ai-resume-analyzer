@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import JobBoard from './JobBoard'
 
 export default async function JobsPage() {
@@ -42,12 +43,12 @@ export default async function JobsPage() {
             <div className="h-full p-6 overflow-hidden flex flex-col">
                 <div className="flex items-center justify-between mb-6 flex-shrink-0">
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Command Center</h1>
-                        <p className="text-slate-500 text-sm">Manage your high-leverage opportunities</p>
+                        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Jobs</h1>
+                        <p className="text-slate-500 text-sm">Track and manage your applications</p>
                     </div>
-                    <button className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">
+                    <Link href="/dashboard/jobs/new" className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm inline-flex items-center">
                         + Track New Job
-                    </button>
+                    </Link>
                 </div>
 
                 <div className="flex-1 overflow-hidden">

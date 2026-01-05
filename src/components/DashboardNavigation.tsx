@@ -1,9 +1,11 @@
 "use client"
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Briefcase, FileText, User, File } from 'lucide-react'
+import { Menu, X } from 'lucide-react'
 import Logo from '@/components/Logo'
+import { MAIN_NAVIGATION, USER_NAVIGATION } from '@/config/navigation'
 
 interface DashboardNavigationProps {
     userEmail?: string | null
@@ -11,9 +13,11 @@ interface DashboardNavigationProps {
 
 export default function DashboardNavigation({ userEmail }: DashboardNavigationProps) {
     const pathname = usePathname()
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
     // Helper to determine if a link is active
-    const isActive = (path: string) => {
+    const isActive = (path: string, exact = false) => {
+        if (exact) return pathname === path
         return pathname === path || pathname?.startsWith(`${path}/`)
     }
 
@@ -25,47 +29,105 @@ export default function DashboardNavigation({ userEmail }: DashboardNavigationPr
                         <div className="flex-shrink-0 flex items-center">
                             <Logo />
                         </div>
+                        {/* Desktop Navigation */}
                         <div className="hidden sm:-my-px sm:ml-6 sm:flex sm:space-x-8">
-                            <Link
-                                href="/dashboard/resumes"
-                                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive('/dashboard/resumes')
-                                        ? 'border-indigo-500 text-gray-900'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                                    }`}
-                            >
-                                <FileText className="w-4 h-4 mr-2" />
-                                Resumes
-                            </Link>
-                            <Link
-                                href="/dashboard/jobs"
-                                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive('/dashboard/jobs')
-                                        ? 'border-indigo-500 text-gray-900'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                                    }`}
-                            >
-                                <Briefcase className="w-4 h-4 mr-2" />
-                                Jobs
-                            </Link>
-                            <Link
-                                href="/dashboard/documents"
-                                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive('/dashboard/documents')
-                                        ? 'border-indigo-500 text-gray-900'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                                    }`}
-                            >
-                                <File className="w-4 h-4 mr-2" />
-                                Documents
-                            </Link>
+                            {MAIN_NAVIGATION.map((item) => (
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-200 ${isActive(item.href, item.exact)
+                                            ? 'border-indigo-500 text-gray-900'
+                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                        }`}
+                                >
+                                    <item.icon className={`w-4 h-4 mr-2 ${isActive(item.href, item.exact) ? 'text-indigo-500' : 'text-gray-400 group-hover:text-gray-500'
+                                        }`} />
+                                    {item.name}
+                                </Link>
+                            ))}
                         </div>
                     </div>
+
+                    {/* User Menu & Mobile Toggle */}
                     <div className="hidden sm:ml-6 sm:flex sm:items-center">
-                        <Link href="/dashboard/settings" className="flex items-center text-sm text-gray-500 hover:text-indigo-600 transition">
-                            <User className="w-4 h-4 mr-2" />
-                            {userEmail}
-                        </Link>
+                        {USER_NAVIGATION.map((item) => (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                className="flex items-center text-sm text-gray-500 hover:text-indigo-600 transition"
+                            >
+                                <item.icon className="w-4 h-4 mr-2" />
+                                {userEmail}
+                            </Link>
+                        ))}
+                    </div>
+
+                    <div className="-mr-2 flex items-center sm:hidden">
+                        <button
+                            type="button"
+                            className="bg-white inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                        >
+                            <span className="sr-only">Open main menu</span>
+                            {isMobileMenuOpen ? (
+                                <X className="block h-6 w-6" aria-hidden="true" />
+                            ) : (
+                                <Menu className="block h-6 w-6" aria-hidden="true" />
+                            )}
+                        </button>
                     </div>
                 </div>
             </div>
+
+            {/* Mobile Menu */}
+            {isMobileMenuOpen && (
+                <div className="sm:hidden border-t border-gray-200">
+                    <div className="pt-2 pb-3 space-y-1">
+                        {MAIN_NAVIGATION.map((item) => (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive(item.href, item.exact)
+                                        ? 'bg-indigo-50 border-indigo-500 text-indigo-700'
+                                        : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                                    }`}
+                                onClick={() => setIsMobileMenuOpen(false)}
+                            >
+                                <div className="flex items-center">
+                                    <item.icon className={`w-5 h-5 mr-3 ${isActive(item.href, item.exact) ? 'text-indigo-500' : 'text-gray-400'
+                                        }`} />
+                                    {item.name}
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
+                    <div className="pt-4 pb-4 border-t border-gray-200">
+                        <div className="flex items-center px-4">
+                            <div className="flex-shrink-0">
+                                <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">
+                                    {userEmail?.[0].toUpperCase()}
+                                </div>
+                            </div>
+                            <div className="ml-3">
+                                <div className="text-base font-medium text-gray-800">User</div>
+                                <div className="text-sm font-medium text-gray-500">{userEmail}</div>
+                            </div>
+                        </div>
+                        <div className="mt-3 space-y-1">
+                            {USER_NAVIGATION.map((item) => (
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+                                    onClick={() => setIsMobileMenuOpen(false)}
+                                >
+                                    {item.name}
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
         </nav>
     )
 }
