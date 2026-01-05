@@ -12,12 +12,14 @@ interface MatchAnalysisViewProps {
 export function MatchAnalysisView({ analysis, jobId }: MatchAnalysisViewProps) {
     if (!analysis) {
         return (
-            <div className="text-center py-12 bg-white rounded-lg shadow-sm border border-gray-200">
-                <div className="mx-auto h-12 w-12 text-gray-400">
-                    <AlertTriangle className="h-12 w-12" />
+            <div className="text-center py-16 bg-gradient-to-br from-indigo-50 to-white rounded-xl shadow-sm border border-indigo-100">
+                <div className="mx-auto h-16 w-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
+                    <CheckCircle className="h-8 w-8 text-indigo-600" />
                 </div>
-                <h3 className="mt-2 text-sm font-semibold text-gray-900">No Analysis Available</h3>
-                <p className="mt-1 text-sm text-gray-500">Run an analysis to see how your resume matches this job description.</p>
+                <h3 className="mt-2 text-lg font-bold text-gray-900">Unlock Job Intelligence</h3>
+                <p className="mt-2 text-sm text-gray-600 max-w-sm mx-auto">
+                    See exactly how well your resume matches this job description and get AI-powered suggestions to improve your score.
+                </p>
                 <div className="mt-6">
                     {jobId && (
                         <form action={triggerJobAnalysis.bind(null, jobId)}>

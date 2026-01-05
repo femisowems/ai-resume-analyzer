@@ -55,8 +55,9 @@ export function RequiredDocuments({ documents, onRegenerate, onView, onGenerate 
                             key={doc.id}
                             document={doc}
                             variant="required"
-                            onView={() => doc.document_id && onView(doc.document_id)}
+                            onView={() => onView(doc.id)}
                             onRegenerate={() => onRegenerate(doc.id)}
+                            onGenerate={() => onGenerate(doc.document_type)}
                         />
                     ))}
                 </div>

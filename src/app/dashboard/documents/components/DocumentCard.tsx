@@ -1,6 +1,8 @@
 import { DocumentItem } from "../actions"
-import { FileText, Mail, Linkedin, MoreVertical, Calendar, Briefcase, Zap, CheckCircle2, TrendingUp, AlertCircle } from "lucide-react"
+import { FileText, Mail, Linkedin, MoreVertical, Calendar, Briefcase, Zap, CheckCircle2, TrendingUp, AlertCircle, Download } from "lucide-react"
 import { DocumentAnalysis } from "@/lib/types"
+import { pdf } from '@react-pdf/renderer'
+import { PdfDocumentView } from "@/components/documents/PdfDocumentView"
 
 interface DocumentCardProps {
     doc: DocumentItem
@@ -30,6 +32,30 @@ export function DocumentCard({ doc, onView, onDelete, onLink }: DocumentCardProp
             case 'linkedin': return <Linkedin className="h-5 w-5 text-blue-600" />
             case 'resume': return <FileText className="h-5 w-5 text-fuchsia-600" />
             default: return <FileText className="h-5 w-5 text-gray-500" />
+        }
+    }
+
+    const handleDownload = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        try {
+            const blob = await pdf(
+                <PdfDocumentView
+                    title={doc.title}
+                    content={doc.content}
+                    jobTitle={doc.jobTitle || ''}
+                    companyName={doc.companyName || ''}
+                />
+            ).toBlob();
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${doc.title || 'document'}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (error) {
+            console.error('Failed to download PDF', error);
+            alert('Failed to generate PDF');
         }
     }
 
@@ -130,6 +156,14 @@ export function DocumentCard({ doc, onView, onDelete, onLink }: DocumentCardProp
                     className="px-4 py-2 bg-white border border-gray-200 shadow-sm rounded-lg text-sm font-medium text-gray-700 hover:text-indigo-600 hover:border-indigo-200 hover:shadow-md transition-all transform hover:-translate-y-0.5"
                 >
                     View
+                </button>
+                <button
+                    onClick={handleDownload}
+                    className="px-4 py-2 bg-white border border-gray-200 shadow-sm rounded-lg text-sm font-medium text-gray-700 hover:text-indigo-600 hover:border-indigo-200 hover:shadow-md transition-all transform hover:-translate-y-0.5 flex items-center"
+                    title="Download PDF"
+                >
+                    <Download className="h-4 w-4 mr-2" />
+                    PDF
                 </button>
                 <button
                     onClick={() => onLink(doc)}

@@ -7,7 +7,21 @@ if (!process.env.GEMINI_API_KEY) {
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+
+async function generateWithRetry(prompt: string, retries = 3) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const result = await model.generateContent(prompt);
+      return result;
+    } catch (error) {
+      if (i === retries - 1) throw error;
+      // Exponential backoff: 1s, 2s, 4s
+      await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, i)));
+    }
+  }
+  throw new Error("Failed to generate content after retries");
+}
 
 // The response from Gemini combines analysis + structured content in one JSON
 export interface GeminiAnalysisResponse extends AnalysisResult {
@@ -88,7 +102,7 @@ export async function analyzeResumeWithGemini(
   `;
 
   try {
-    const result = await model.generateContent(prompt);
+    const result = await generateWithRetry(prompt);
     const response = await result.response;
     const text = response.text();
 
@@ -121,7 +135,7 @@ export async function suggestImprovement(
     }
   `;
 
-  const result = await model.generateContent(prompt);
+  const result = await generateWithRetry(prompt);
   const text = result.response.text();
   const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
   const data = JSON.parse(cleanJson);
@@ -160,7 +174,7 @@ export async function analyzeDocumentHealth(
   `;
 
   try {
-    const result = await model.generateContent(prompt);
+    const result = await generateWithRetry(prompt);
     const response = await result.response;
     const text = response.text();
     const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();

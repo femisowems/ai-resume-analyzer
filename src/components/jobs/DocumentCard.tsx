@@ -1,7 +1,7 @@
 'use client'
 
 import { JobDocument } from '@/lib/types'
-import { FileText, Eye, RefreshCw, Clock, CheckCircle, AlertTriangle, XCircle } from 'lucide-react'
+import { FileText, Eye, RefreshCw, Clock, CheckCircle, AlertTriangle, XCircle, Plus } from 'lucide-react'
 import { useState } from 'react'
 
 interface DocumentCardProps {
@@ -9,10 +9,12 @@ interface DocumentCardProps {
     variant: 'required' | 'optional'
     onView?: () => void
     onRegenerate?: () => Promise<void>
+    onGenerate?: () => Promise<void>
 }
 
-export function DocumentCard({ document, variant, onView, onRegenerate }: DocumentCardProps) {
+export function DocumentCard({ document, variant, onView, onRegenerate, onGenerate }: DocumentCardProps) {
     const [isRegenerating, setIsRegenerating] = useState(false)
+    const [isGenerating, setIsGenerating] = useState(false)
 
     const handleRegenerate = async () => {
         if (!onRegenerate) return
@@ -21,6 +23,16 @@ export function DocumentCard({ document, variant, onView, onRegenerate }: Docume
             await onRegenerate()
         } finally {
             setIsRegenerating(false)
+        }
+    }
+
+    const handleGenerate = async () => {
+        if (!onGenerate) return
+        setIsGenerating(true)
+        try {
+            await onGenerate()
+        } finally {
+            setIsGenerating(false)
         }
     }
 
@@ -124,6 +136,20 @@ export function DocumentCard({ document, variant, onView, onRegenerate }: Docume
                     >
                         <RefreshCw className={`w-4 h-4 mr-2 ${isRegenerating ? 'animate-spin' : ''}`} />
                         {isRegenerating ? 'Regenerating...' : 'Regenerate'}
+                    </button>
+                )}
+                {document.status === 'missing' && onGenerate && (
+                    <button
+                        onClick={handleGenerate}
+                        disabled={isGenerating}
+                        className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 disabled:opacity-70 disabled:cursor-not-allowed"
+                    >
+                        {isGenerating ? (
+                            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                            <Plus className="w-4 h-4 mr-2" />
+                        )}
+                        {isGenerating ? 'Generating...' : 'Generate'}
                     </button>
                 )}
             </div>

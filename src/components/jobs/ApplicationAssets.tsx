@@ -1,6 +1,6 @@
 'use client'
 
-import { ApplicationAssetsData, ContextAction, DocumentType } from '@/lib/types'
+import { ApplicationAssetsData, ContextAction, DocumentType, JobDocument } from '@/lib/types'
 import { ResumeAnchor } from './ResumeAnchor'
 import { RequiredDocuments } from './RequiredDocuments'
 import { PostInterviewDocuments } from './PostInterviewDocuments'

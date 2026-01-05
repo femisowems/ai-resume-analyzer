@@ -6,6 +6,7 @@ import { ChevronLeft, Calendar } from 'lucide-react'
 import JobTabs from '@/app/dashboard/jobs/[id]/JobTabs'
 import { CompanyLogo } from '@/components/ui/CompanyLogo'
 import { JobHeader } from '@/components/jobs/JobHeader'
+import { JobContextHeader } from '@/components/jobs/JobContextHeader'
 
 export default async function JobDetailLayout({
     children,
@@ -86,6 +87,7 @@ export default async function JobDetailLayout({
             />
 
             <div className="px-4 md:px-0">
+                <JobContextHeader job={jobExtended} />
                 <JobTabs jobId={id} />
 
                 <div className="mt-6 md:mt-8">

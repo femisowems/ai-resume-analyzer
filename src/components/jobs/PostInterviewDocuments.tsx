@@ -62,8 +62,9 @@ export function PostInterviewDocuments({
                                     <DocumentCard
                                         document={doc}
                                         variant="optional"
-                                        onView={() => doc.document_id && onView(doc.document_id)}
+                                        onView={() => onView(doc.id)}
                                         onRegenerate={doc.document_id ? () => onRegenerate(doc.id) : undefined}
+                                        onGenerate={() => onGenerate(doc.document_type)}
                                     />
                                     {doc.status === 'missing' && (
                                         <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 italic">
