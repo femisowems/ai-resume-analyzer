@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation'
 import { regenerateJobDocument, generateJobDocument, changeJobResume } from '@/app/dashboard/jobs/actions-assets'
 import { toast } from '@/lib/toast'
 import { ResumeSelectorModal } from './ResumeSelectorModal'
+import { DocumentViewerModal } from './DocumentViewerModal'
 
 interface ApplicationAssetsProps {
     jobId: string
@@ -21,6 +22,7 @@ export function ApplicationAssets({ jobId, jobStage, assetsData }: ApplicationAs
     const router = useRouter()
     const [isGenerating, setIsGenerating] = useState(false)
     const [isResumeModalOpen, setIsResumeModalOpen] = useState(false)
+    const [viewingDocument, setViewingDocument] = useState<JobDocument | null>(null)
 
     const handleChangeResume = () => {
         setIsResumeModalOpen(true)
@@ -81,9 +83,16 @@ export function ApplicationAssets({ jobId, jobStage, assetsData }: ApplicationAs
         }
     }
 
-    const handleViewDocument = (documentId: string) => {
-        // TODO: Open document viewer modal
-        router.push(`/dashboard/documents?highlight=${documentId}`)
+    const handleViewDocument = (jobDocumentId: string) => {
+        // Find document in assetsData
+        const doc = [...assetsData.required_documents, ...assetsData.optional_documents]
+            .find(d => d.id === jobDocumentId)
+
+        if (doc?.document_id) {
+            setViewingDocument(doc)
+        } else {
+            toast.error('Document content not found')
+        }
     }
 
     const handleActionClick = (action: ContextAction) => {
@@ -94,14 +103,23 @@ export function ApplicationAssets({ jobId, jobStage, assetsData }: ApplicationAs
                 }
                 break
             case 'regenerate':
-                // Find the document and regenerate
-                toast.info('Regenerate action coming soon')
+                // Find corresponding job document and regenerate
+                const docToRegen = [...assetsData.required_documents, ...assetsData.optional_documents]
+                    .find(d => d.document_type === action.document_type)
+                if (docToRegen) {
+                    handleRegenerate(docToRegen.id)
+                }
                 break
             case 'optimize':
                 handleOptimizeResume()
                 break
             case 'review':
-                toast.info('Review action coming soon')
+                // Find corresponding job document and view
+                const docToReview = [...assetsData.required_documents, ...assetsData.optional_documents]
+                    .find(d => d.document_type === action.document_type)
+                if (docToReview) {
+                    handleViewDocument(docToReview.id)
+                }
                 break
         }
     }
@@ -144,12 +162,20 @@ export function ApplicationAssets({ jobId, jobStage, assetsData }: ApplicationAs
             <ContextActions
                 actions={assetsData.next_actions}
                 onActionClick={handleActionClick}
-                {/* Modals */}
+            />
+
+            {/* Modals */}
             <ResumeSelectorModal
                 isOpen={isResumeModalOpen}
                 onClose={() => setIsResumeModalOpen(false)}
                 onSelect={handleSelectResume}
                 currentVersionId={assetsData.resume_used?.resume_version?.id}
+            />
+
+            <DocumentViewerModal
+                isOpen={!!viewingDocument}
+                onClose={() => setViewingDocument(null)}
+                document={viewingDocument}
             />
         </div>
     )
