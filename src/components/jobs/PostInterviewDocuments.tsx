@@ -29,16 +29,16 @@ export function PostInterviewDocuments({
     }
 
     return (
-        <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+        <div className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
             <button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-100 transition-colors"
             >
                 <div className="flex items-center gap-3">
-                    <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                    <h3 className="text-base font-semibold text-gray-900">
                         Follow-Up & Post-Interview
                     </h3>
-                    <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Optional
                     </span>
                 </div>
@@ -67,7 +67,7 @@ export function PostInterviewDocuments({
                                         onGenerate={() => onGenerate(doc.document_type)}
                                     />
                                     {doc.status === 'missing' && (
-                                        <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 italic">
+                                        <div className="mt-2 text-xs text-gray-500 italic">
                                             💡 {contextHint}
                                         </div>
                                     )}

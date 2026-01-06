@@ -94,7 +94,7 @@ export function CompanyLogo({
         return (
             <div
                 className={cn(
-                    "rounded-md bg-slate-100 flex items-center justify-center border border-slate-200 text-slate-400 overflow-hidden",
+                    "rounded-md bg-muted flex items-center justify-center border border-border text-muted-foreground overflow-hidden",
                     className
                 )}
                 style={{ width: size, height: size }}
@@ -107,7 +107,7 @@ export function CompanyLogo({
     return (
         <div
             className={cn(
-                "relative rounded-md bg-white flex items-center justify-center border border-slate-200 overflow-hidden",
+                "relative rounded-md bg-card flex items-center justify-center border border-border overflow-hidden",
                 className
             )}
             style={{ width: size, height: size }}

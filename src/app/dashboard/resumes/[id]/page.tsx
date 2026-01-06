@@ -217,7 +217,10 @@ export default async function ResumeDetailPage({ params, searchParams }: { param
                         <p className="text-gray-500 text-sm mb-6">
                             This resume hasn't been analyzed by AI yet. Get insights on keyword match, impact, and ATS score.
                         </p>
-                        <form action={analyzeResumeAction.bind(null, resume.id)}>
+                        <form action={async () => {
+                            'use server'
+                            await analyzeResumeAction(resume.id)
+                        }}>
                             <button
                                 type="submit"
                                 className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-all shadow-md shadow-indigo-100 flex items-center justify-center gap-2 group"

@@ -52,10 +52,10 @@ export function DocumentViewerModal({
         >
             <div className="flex flex-col h-full max-h-[70vh]">
                 {/* Content Section */}
-                <div className="flex-1 overflow-y-auto p-6 bg-slate-50 dark:bg-slate-900/50">
-                    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 p-8 min-h-[400px]">
+                <div className="flex-1 overflow-y-auto p-6 bg-slate-50">
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-8 min-h-[400px]">
                         {document.document?.content ? (
-                            <pre className="whitespace-pre-wrap font-sans text-slate-700 dark:text-slate-300 leading-relaxed text-sm">
+                            <pre className="whitespace-pre-wrap font-sans text-slate-700 leading-relaxed text-sm">
                                 {document.document.content}
                             </pre>
                         ) : (
@@ -68,7 +68,7 @@ export function DocumentViewerModal({
                 </div>
 
                 {/* Footer Actions */}
-                <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 flex justify-between items-center">
+                <div className="p-4 border-t border-slate-100 bg-white flex justify-between items-center">
                     <div className="flex items-center gap-2 text-xs text-slate-400">
                         {getIcon()}
                         <span>Document ID: {document.document_id?.slice(0, 8)}...</span>
@@ -78,7 +78,7 @@ export function DocumentViewerModal({
                         <button
                             onClick={handleCopy}
                             disabled={!document.document?.content}
-                            className="flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
+                            className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50"
                         >
                             {copied ? (
                                 <>

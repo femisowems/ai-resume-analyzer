@@ -17,7 +17,7 @@ export function ContextActions({ actions, onActionClick }: ContextActionsProps) 
     const secondaryAction = actions.find(a => a.priority === 'secondary')
 
     return (
-        <div className="sticky bottom-0 bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-700 dark:to-purple-700 rounded-xl p-6 shadow-lg">
+        <div className="sticky bottom-0 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl p-6 shadow-lg">
             <div className="flex items-start gap-4">
                 <div className="p-3 bg-white/20 rounded-lg">
                     <Sparkles className="w-6 h-6 text-white" />

@@ -13,10 +13,10 @@ export default async function DashboardPage() {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
-                    <p className="text-gray-500 dark:text-gray-400 text-sm">Welcome back to your Career Operating System</p>
+                    <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+                    <p className="text-muted-foreground text-sm">Welcome back to your Career Operating System</p>
                 </div>
-                <div className="hidden md:block text-sm text-gray-400">
+                <div className="hidden md:block text-sm text-muted-foreground">
                     Last updated: {new Date().toLocaleTimeString()}
                 </div>
             </div>

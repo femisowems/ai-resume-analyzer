@@ -7,10 +7,10 @@ import { ChevronRight } from 'lucide-react'
 
 export default function PipelineOverview({ stages }: { stages: PipelineStage[] }) {
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+        <div className="bg-card rounded-2xl p-6 shadow-sm border border-border">
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white">Application Pipeline</h2>
-                <Link href="/dashboard/jobs" className="text-sm text-indigo-600 hover:text-indigo-700 font-medium flex items-center">
+                <h2 className="text-lg font-bold text-card-foreground">Application Pipeline</h2>
+                <Link href="/dashboard/jobs" className="text-sm text-primary hover:text-primary/80 font-medium flex items-center">
                     View Board <ChevronRight size={16} />
                 </Link>
             </div>
@@ -25,10 +25,10 @@ export default function PipelineOverview({ stages }: { stages: PipelineStage[] }
                         className="group"
                     >
                         <div className="flex justify-between items-center mb-1">
-                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{stage.name}</span>
-                            <span className="text-sm font-bold text-gray-900 dark:text-white">{stage.count}</span>
+                            <span className="text-sm font-medium text-muted-foreground">{stage.name}</span>
+                            <span className="text-sm font-bold text-card-foreground">{stage.count}</span>
                         </div>
-                        <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
+                        <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
                             <motion.div
                                 initial={{ width: 0 }}
                                 animate={{ width: `${stage.count > 0 ? (stage.count / 10) * 100 : 0}%` }} // Simplified scale
@@ -41,14 +41,14 @@ export default function PipelineOverview({ stages }: { stages: PipelineStage[] }
                 ))}
             </div>
 
-            <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-700 grid grid-cols-2 gap-4">
-                <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-center">
-                    <p className="text-xs text-gray-500 uppercase tracking-wider">Conversion</p>
-                    <p className="font-bold text-gray-900 dark:text-white text-lg">12%</p>
+            <div className="mt-6 pt-4 border-t border-border grid grid-cols-2 gap-4">
+                <div className="p-3 bg-muted/50 rounded-lg text-center">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Conversion</p>
+                    <p className="font-bold text-card-foreground text-lg">12%</p>
                 </div>
-                <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-center">
-                    <p className="text-xs text-gray-500 uppercase tracking-wider">Avg. Time</p>
-                    <p className="font-bold text-gray-900 dark:text-white text-lg">14d</p>
+                <div className="p-3 bg-muted/50 rounded-lg text-center">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Avg. Time</p>
+                    <p className="font-bold text-card-foreground text-lg">14d</p>
                 </div>
             </div>
         </div>

@@ -22,7 +22,7 @@ export default function DashboardNavigation({ userEmail }: DashboardNavigationPr
     }
 
     return (
-        <nav className="bg-white shadow-sm border-b border-gray-200">
+        <nav className="bg-background shadow-sm border-b border-border">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between h-16">
                     <div className="flex">
@@ -36,11 +36,11 @@ export default function DashboardNavigation({ userEmail }: DashboardNavigationPr
                                     key={item.href}
                                     href={item.href}
                                     className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-200 ${isActive(item.href, item.exact)
-                                            ? 'border-indigo-500 text-gray-900'
-                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                        ? 'border-primary text-foreground'
+                                        : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
                                         }`}
                                 >
-                                    <item.icon className={`w-4 h-4 mr-2 ${isActive(item.href, item.exact) ? 'text-indigo-500' : 'text-gray-400 group-hover:text-gray-500'
+                                    <item.icon className={`w-4 h-4 mr-2 ${isActive(item.href, item.exact) ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
                                         }`} />
                                     {item.name}
                                 </Link>
@@ -54,7 +54,7 @@ export default function DashboardNavigation({ userEmail }: DashboardNavigationPr
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                className="flex items-center text-sm text-gray-500 hover:text-indigo-600 transition"
+                                className="flex items-center text-sm text-muted-foreground hover:text-primary transition"
                             >
                                 <item.icon className="w-4 h-4 mr-2" />
                                 {userEmail}
@@ -65,7 +65,7 @@ export default function DashboardNavigation({ userEmail }: DashboardNavigationPr
                     <div className="-mr-2 flex items-center sm:hidden">
                         <button
                             type="button"
-                            className="bg-white inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                            className="bg-background inline-flex items-center justify-center p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                         >
                             <span className="sr-only">Open main menu</span>
@@ -81,36 +81,36 @@ export default function DashboardNavigation({ userEmail }: DashboardNavigationPr
 
             {/* Mobile Menu */}
             {isMobileMenuOpen && (
-                <div className="sm:hidden border-t border-gray-200">
+                <div className="sm:hidden border-t border-border">
                     <div className="pt-2 pb-3 space-y-1">
                         {MAIN_NAVIGATION.map((item) => (
                             <Link
                                 key={item.href}
                                 href={item.href}
                                 className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive(item.href, item.exact)
-                                        ? 'bg-indigo-50 border-indigo-500 text-indigo-700'
-                                        : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                                    ? 'bg-primary/10 border-primary text-primary'
+                                    : 'border-transparent text-muted-foreground hover:bg-accent hover:border-border hover:text-foreground'
                                     }`}
                                 onClick={() => setIsMobileMenuOpen(false)}
                             >
                                 <div className="flex items-center">
-                                    <item.icon className={`w-5 h-5 mr-3 ${isActive(item.href, item.exact) ? 'text-indigo-500' : 'text-gray-400'
+                                    <item.icon className={`w-5 h-5 mr-3 ${isActive(item.href, item.exact) ? 'text-primary' : 'text-muted-foreground'
                                         }`} />
                                     {item.name}
                                 </div>
                             </Link>
                         ))}
                     </div>
-                    <div className="pt-4 pb-4 border-t border-gray-200">
+                    <div className="pt-4 pb-4 border-t border-border">
                         <div className="flex items-center px-4">
                             <div className="flex-shrink-0">
-                                <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">
+                                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
                                     {userEmail?.[0].toUpperCase()}
                                 </div>
                             </div>
                             <div className="ml-3">
-                                <div className="text-base font-medium text-gray-800">User</div>
-                                <div className="text-sm font-medium text-gray-500">{userEmail}</div>
+                                <div className="text-base font-medium text-foreground">User</div>
+                                <div className="text-sm font-medium text-muted-foreground">{userEmail}</div>
                             </div>
                         </div>
                         <div className="mt-3 space-y-1">
@@ -118,7 +118,7 @@ export default function DashboardNavigation({ userEmail }: DashboardNavigationPr
                                 <Link
                                     key={item.href}
                                     href={item.href}
-                                    className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+                                    className="block px-4 py-2 text-base font-medium text-muted-foreground hover:text-foreground hover:bg-accent"
                                     onClick={() => setIsMobileMenuOpen(false)}
                                 >
                                     {item.name}

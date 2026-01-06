@@ -18,7 +18,7 @@ export default async function DashboardLayout({
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col text-gray-900">
+        <div className="min-h-screen bg-background flex flex-col text-foreground">
             <CommandMenu />
             <DashboardNavigation userEmail={user.email} />
 
@@ -26,24 +26,24 @@ export default async function DashboardLayout({
                 {children}
             </main>
 
-            <footer className="bg-white border-t border-gray-200 mt-auto">
+            <footer className="bg-background border-t border-border mt-auto">
                 <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
                     <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-muted-foreground">
                             © {new Date().getFullYear()} CareerAI. Built with Next.js, Supabase & OpenAI.
-                            <span className="ml-2 text-xs text-gray-400">(Press Cmd+K to search)</span>
+                            <span className="ml-2 text-xs text-muted-foreground/60">(Press Cmd+K to search)</span>
                         </div>
                         <div className="flex space-x-6 text-sm">
-                            <Link href="/dashboard" className="text-gray-500 hover:text-indigo-600 transition">
+                            <Link href="/dashboard" className="text-muted-foreground hover:text-primary transition">
                                 Dashboard
                             </Link>
-                            <Link href="/dashboard/resumes" className="text-gray-500 hover:text-indigo-600 transition">
+                            <Link href="/dashboard/resumes" className="text-muted-foreground hover:text-primary transition">
                                 Resumes
                             </Link>
-                            <Link href="/dashboard/jobs" className="text-gray-500 hover:text-indigo-600 transition">
+                            <Link href="/dashboard/jobs" className="text-muted-foreground hover:text-primary transition">
                                 Jobs
                             </Link>
-                            <Link href="/dashboard/settings" className="text-gray-500 hover:text-indigo-600 transition">
+                            <Link href="/dashboard/settings" className="text-muted-foreground hover:text-primary transition">
                                 Settings
                             </Link>
                         </div>
