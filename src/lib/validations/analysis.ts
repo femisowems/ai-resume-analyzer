@@ -36,34 +36,50 @@ export const AnalysisResultSchema = z.object({
 
 export type AnalysisResult = z.infer<typeof AnalysisResultSchema>;
 
-/**
- * Helper to safely parse analysis result with defaults
- */
+// Helper to safely parse analysis result with defaults
 export function safeParseAnalysis(data: any): AnalysisResult {
+    // 1. Try strict validation
     const result = AnalysisResultSchema.safeParse(data);
     if (result.success) return result.data;
 
-    // Log error in dev mode if data isn't empty (we expect {} for pending)
-    if (process.env.NODE_ENV === 'development' && data && Object.keys(data).length > 0) {
-        console.warn('[Analysis Validation Error]:', result.error.format());
+    // 2. Handle Legacy / Partial Formats silently
+    // If we have signs of legacy data (score, overall_score) or partial structure
+    if (data && (
+        'overall_score' in data ||
+        'score' in data ||
+        'sub_scores' in data ||
+        ('breakdown' in data && typeof data.breakdown === 'object')
+    )) {
+        return {
+            total: data.total ?? data.overall_score ?? data.score ?? 0,
+            breakdown: {
+                ats: data.breakdown?.ats ?? data.sub_scores?.ats_compatibility ?? 0,
+                impact: data.breakdown?.impact ?? data.sub_scores?.impact_metrics ?? 0,
+                keywords: data.breakdown?.keywords ?? data.sub_scores?.keyword_match ?? 0,
+                clarity: data.breakdown?.clarity ?? data.sub_scores?.clarity ?? 0,
+            },
+            explanation: {
+                ats: data.explanation?.ats ?? [],
+                impact: data.explanation?.impact ?? [],
+                keywords: data.explanation?.keywords ?? [],
+                clarity: data.explanation?.clarity ?? [],
+            },
+            keywords: data.keywords ?? { present: [], missing: [], irrelevant: [] },
+            suggestions: data.suggestions ?? [],
+        };
     }
 
-    // Fallback / Defaults
+    // 3. Log error only if data exists (not null/empty) but is completely unrecognizable
+    if (process.env.NODE_ENV === 'development' && data && Object.keys(data).length > 0) {
+        console.warn('[Analysis Validation Error]: Data structure unrecognized', result.error.format());
+    }
+
+    // 4. Default / Empty State
     return {
-        total: data?.total || data?.overall_score || data?.score || 0,
-        breakdown: {
-            ats: data?.breakdown?.ats || data?.sub_scores?.ats_compatibility || 0,
-            impact: data?.breakdown?.impact || data?.sub_scores?.impact_metrics || 0,
-            keywords: data?.breakdown?.keywords || data?.sub_scores?.keyword_match || 0,
-            clarity: data?.breakdown?.clarity || data?.sub_scores?.clarity || 0,
-        },
-        explanation: {
-            ats: data?.explanation?.ats || [],
-            impact: data?.explanation?.impact || [],
-            keywords: data?.explanation?.keywords || [],
-            clarity: data?.explanation?.clarity || [],
-        },
-        keywords: data?.keywords || { present: [], missing: [], irrelevant: [] },
-        suggestions: data?.suggestions || [],
+        total: 0,
+        breakdown: { ats: 0, impact: 0, keywords: 0, clarity: 0 },
+        explanation: { ats: [], impact: [], keywords: [], clarity: [] },
+        keywords: { present: [], missing: [], irrelevant: [] },
+        suggestions: [],
     };
 }

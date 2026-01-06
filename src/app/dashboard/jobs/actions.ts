@@ -6,6 +6,30 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { resolveAndLinkCompany } from '@/lib/companies'
 
+export async function updateJobDescription(jobId: string, description: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) throw new Error('Unauthorized')
+
+    const { error } = await supabase
+        .from('job_applications')
+        .update({
+            job_description: description,
+            updated_at: new Date().toISOString()
+        })
+        .eq('id', jobId)
+        .eq('user_id', user.id)
+
+    if (error) {
+        console.error('Error updating job description:', error)
+        throw new Error('Failed to update job description')
+    }
+
+    revalidatePath(`/dashboard/jobs/${jobId}`)
+    revalidatePath(`/dashboard/jobs/${jobId}/description`)
+}
+
 export async function updateJobStatus(jobId: string, status: JobStatus) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()

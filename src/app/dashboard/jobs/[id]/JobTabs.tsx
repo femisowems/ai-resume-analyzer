@@ -10,6 +10,7 @@ export default function JobTabs({ jobId }: { jobId: string }) {
 
     const tabs = [
         { name: 'Overview', href: baseUrl, icon: LayoutDashboard },
+        { name: 'Job Description', href: `${baseUrl}/description`, icon: FileText },
         { name: 'Match Analysis', href: `${baseUrl}/match`, icon: Target },
         { name: 'Interview Prep', href: `${baseUrl}/interview`, icon: MessageSquare },
         { name: 'Contacts', href: `${baseUrl}/contacts`, icon: Users },

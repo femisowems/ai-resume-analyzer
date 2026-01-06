@@ -62,29 +62,7 @@ export default async function JobOverviewPage({ params }: { params: Promise<{ id
                     assetsData={assetsData}
                 />
 
-                {/* Timeline */}
-                <div className="bg-white shadow rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-6">Activity Timeline</h3>
-                    <JobTimeline events={events} />
-                </div>
 
-                {/* Notes (Legacy form field) */}
-                <div className="bg-white shadow rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Private Notes</h3>
-                    <form action={updateJobApplication}>
-                        <input type="hidden" name="id" value={job.id} />
-                        <textarea
-                            name="notes"
-                            rows={6}
-                            defaultValue={job.notes || ''}
-                            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-3"
-                            placeholder="Jot down quick notes, salary details, or thoughts..."
-                        />
-                        <div className="mt-3 flex justify-end">
-                            <button type="submit" className="text-indigo-600 hover:text-indigo-800 text-sm font-medium">Save Notes</button>
-                        </div>
-                    </form>
-                </div>
             </div>
 
             {/* Sidebar: 1/3 width */}
@@ -107,6 +85,30 @@ export default async function JobOverviewPage({ params }: { params: Promise<{ id
                             </div>
                         )}
                     </dl>
+                </div>
+
+                {/* Timeline - Moved to Right Column */}
+                <div className="bg-white shadow rounded-lg p-6">
+                    <h3 className="text-sm font-semibold text-gray-900 mb-4">Activity Timeline</h3>
+                    <JobTimeline events={events} />
+                </div>
+
+                {/* Notes - Moved to Right Column */}
+                <div className="bg-white shadow rounded-lg p-6">
+                    <h3 className="text-sm font-semibold text-gray-900 mb-4">Private Notes</h3>
+                    <form action={updateJobApplication}>
+                        <input type="hidden" name="id" value={job.id} />
+                        <textarea
+                            name="notes"
+                            rows={6}
+                            defaultValue={job.notes || ''}
+                            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-3"
+                            placeholder="Jot down quick notes..."
+                        />
+                        <div className="mt-3 flex justify-end">
+                            <button type="submit" className="text-indigo-600 hover:text-indigo-800 text-sm font-medium">Save Notes</button>
+                        </div>
+                    </form>
                 </div>
 
             </div>
