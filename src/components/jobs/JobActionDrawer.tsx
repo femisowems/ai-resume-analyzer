@@ -75,43 +75,43 @@ export function JobActionDrawer({ job, isOpen, onClose }: JobActionDrawerProps) 
             {/* Drawer */}
             <div
                 className={cn(
-                    "fixed top-2 bottom-2 right-2 w-[480px] bg-white rounded-2xl shadow-2xl z-50 flex flex-col transform transition-transform duration-300 ease-out border border-slate-100",
+                    "fixed top-2 bottom-2 right-2 w-[480px] bg-background rounded-2xl shadow-2xl z-50 flex flex-col transform transition-transform duration-300 ease-out border border-border",
                     isOpen ? "translate-x-0" : "translate-x-[120%]"
                 )}
             >
                 {/* Header */}
-                <div className="p-6 border-b border-slate-100 flex items-start justify-between bg-slate-50/50 rounded-t-2xl">
+                <div className="p-6 border-b border-border flex items-start justify-between bg-muted/30 rounded-t-2xl">
                     <div className="flex gap-4">
                         <CompanyLogo
                             jobId={job.id}
                             companyName={job.company_name}
                             logoUrl={job.company_logo || job.company_logo_cache}
                             size={64}
-                            className="rounded-xl shadow-sm"
+                            className="rounded-xl shadow-sm bg-muted/50"
                         />
                         <div>
-                            <h2 className="text-xl font-bold text-slate-900 leading-tight mb-1">{job.role}</h2>
-                            <p className="text-slate-500 font-medium">{job.company_name}</p>
+                            <h2 className="text-xl font-bold text-foreground leading-tight mb-1">{job.role}</h2>
+                            <p className="text-muted-foreground font-medium">{job.company_name}</p>
                             <div className="flex items-center gap-2 mt-3">
                                 <Link
                                     href={`/dashboard/jobs/${job.id}`}
-                                    className="flex items-center gap-1 text-xs font-semibold px-2 py-1 bg-indigo-600 text-white rounded-md border border-indigo-600 hover:bg-indigo-700 transition-colors shadow-sm"
+                                    className="flex items-center gap-1 text-xs font-semibold px-2 py-1 bg-primary text-primary-foreground rounded-md border border-primary hover:bg-primary/90 transition-colors shadow-sm"
                                 >
                                     Open War Room
                                     <ExternalLink size={12} className="ml-1" />
                                 </Link>
-                                <span className="text-xs font-semibold px-2 py-1 bg-indigo-50 text-indigo-700 rounded-md border border-indigo-100">
+                                <span className="text-xs font-semibold px-2 py-1 bg-primary/10 text-primary rounded-md border border-primary/20">
                                     {job.status.replace('_', ' ')}
                                 </span>
                                 {job.match_score && (
-                                    <span className="text-xs font-semibold px-2 py-1 bg-emerald-50 text-emerald-700 rounded-md border border-emerald-100">
+                                    <span className="text-xs font-semibold px-2 py-1 bg-emerald-500/10 text-emerald-600 rounded-md border border-emerald-500/20">
                                         {job.match_score}% Match
                                     </span>
                                 )}
                             </div>
                         </div>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-slate-200/50 rounded-full text-slate-400 transition-colors">
+                    <button onClick={onClose} className="p-2 hover:bg-muted rounded-full text-muted-foreground transition-colors">
                         <X size={20} />
                     </button>
                 </div>
@@ -125,9 +125,9 @@ export function JobActionDrawer({ job, isOpen, onClose }: JobActionDrawerProps) 
                             <button
                                 key={i}
                                 onClick={() => handleActionClick(action)}
-                                className="flex items-center gap-2 justify-center px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all font-medium text-sm shadow-md hover:shadow-lg active:scale-95"
+                                className="flex items-center gap-2 justify-center px-4 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-all font-medium text-sm shadow-md hover:shadow-lg active:scale-95"
                             >
-                                <SparklesIcon className="w-4 h-4 text-indigo-200" />
+                                <SparklesIcon className="w-4 h-4 text-primary-foreground/70" />
                                 {action}
                             </button>
                         ))}
@@ -135,9 +135,9 @@ export function JobActionDrawer({ job, isOpen, onClose }: JobActionDrawerProps) 
 
                     {/* AI Insights Section */}
                     {job.analysis_json && (
-                        <div className="bg-slate-50 rounded-xl p-5 border border-slate-200">
-                            <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
-                                <BrainCircuitIcon className="w-4 h-4 text-violet-500" />
+                        <div className="bg-muted/30 rounded-xl p-5 border border-border">
+                            <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
+                                <BrainCircuitIcon className="w-4 h-4 text-primary" />
                                 Match Analysis
                             </h3>
                             <div className="space-y-4">
@@ -145,7 +145,7 @@ export function JobActionDrawer({ job, isOpen, onClose }: JobActionDrawerProps) 
                                     <span className="text-xs font-bold text-emerald-600 uppercase tracking-wide">Matched Keywords</span>
                                     <div className="flex flex-wrap gap-2 mt-2">
                                         {job.analysis_json.keywords_matched.slice(0, 5).map(k => (
-                                            <span key={k} className="px-2 py-1 bg-white border border-emerald-100 text-emerald-700 text-xs rounded shadow-sm">{k}</span>
+                                            <span key={k} className="px-2 py-1 bg-background border border-emerald-500/20 text-emerald-600 text-xs rounded shadow-sm">{k}</span>
                                         ))}
                                     </div>
                                 </div>
@@ -153,7 +153,7 @@ export function JobActionDrawer({ job, isOpen, onClose }: JobActionDrawerProps) 
                                     <span className="text-xs font-bold text-amber-600 uppercase tracking-wide">Missing / Context Gaps</span>
                                     <div className="flex flex-wrap gap-2 mt-2">
                                         {job.analysis_json.missing_keywords.slice(0, 3).map(k => (
-                                            <span key={k} className="px-2 py-1 bg-white border border-amber-100 text-amber-700 text-xs rounded shadow-sm">{k}</span>
+                                            <span key={k} className="px-2 py-1 bg-background border border-amber-500/20 text-amber-600 text-xs rounded shadow-sm">{k}</span>
                                         ))}
                                     </div>
                                 </div>
@@ -163,19 +163,19 @@ export function JobActionDrawer({ job, isOpen, onClose }: JobActionDrawerProps) 
 
                     {/* Timeline / Activity */}
                     <div>
-                        <h3 className="text-sm font-bold text-slate-900 mb-4">Activity Log</h3>
-                        <div className="border-l-2 border-slate-100 pl-4 space-y-6">
+                        <h3 className="text-sm font-bold text-foreground mb-4">Activity Log</h3>
+                        <div className="border-l-2 border-border pl-4 space-y-6">
                             <div className="relative">
-                                <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-slate-300 ring-4 ring-white" />
-                                <p className="text-sm text-slate-600">Updated status to <span className="font-medium text-slate-900">{job.status}</span></p>
-                                <span className="text-xs text-slate-400 mt-1 block">
+                                <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-muted-foreground/30 ring-4 ring-background" />
+                                <p className="text-sm text-muted-foreground">Updated status to <span className="font-medium text-foreground">{job.status}</span></p>
+                                <span className="text-xs text-muted-foreground mt-1 block">
                                     {formatDistanceToNow(new Date(job.updated_at), { addSuffix: true })}
                                 </span>
                             </div>
                             <div className="relative">
-                                <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-indigo-200 ring-4 ring-white" />
-                                <p className="text-sm text-slate-600">Applied to role</p>
-                                <span className="text-xs text-slate-400 mt-1 block">
+                                <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-primary/30 ring-4 ring-background" />
+                                <p className="text-sm text-muted-foreground">Applied to role</p>
+                                <span className="text-xs text-muted-foreground mt-1 block">
                                     {formatDistanceToNow(new Date(job.created_at), { addSuffix: true })}
                                 </span>
                             </div>
@@ -184,9 +184,9 @@ export function JobActionDrawer({ job, isOpen, onClose }: JobActionDrawerProps) 
                 </div>
 
                 {/* Footer */}
-                <div className="p-4 border-t border-slate-100 bg-slate-50 rounded-b-2xl flex justify-between items-center text-xs text-slate-500">
+                <div className="p-4 border-t border-border bg-muted/30 rounded-b-2xl flex justify-between items-center text-xs text-muted-foreground">
                     <span>ID: {job.id.slice(0, 8)}</span>
-                    <button className="text-red-500 hover:bg-red-50 px-3 py-1.5 rounded transition-colors">Archive Application</button>
+                    <button className="text-destructive hover:bg-destructive/10 px-3 py-1.5 rounded transition-colors">Archive Application</button>
                 </div>
             </div>
         </>

@@ -281,15 +281,21 @@ export interface ComparisonResult {
   recommendation: string;
 }
 
-export async function compareResumesWithGemini(resumeAText: string, resumeBText: string): Promise<ComparisonResult> {
+export async function compareResumesWithGemini(
+  resumeAText: string,
+  resumeBText: string,
+  resumeAName: string = "Resume A",
+  resumeBName: string = "Resume B"
+): Promise<ComparisonResult> {
   const prompt = `
     You are a Senior Technical Recruiter and Engineering Manager comparing two resumes for a general Senior Software Engineer role.
-    Compare Resume A and Resume B in depth.
+    Compare "${resumeAName}" (referred to as Resume A) and "${resumeBName}" (referred to as Resume B) in depth.
 
     **Goal**: Determine which candidate is effectively stronger and why.
 
     **Constraint 1**: Output strictly valid JSON. No markdown.
     **Constraint 2**: detailed rationale is required.
+    **Constraint 3**: In your summary and rationale, refer to the resumes by their actual names ("${resumeAName}" and "${resumeBName}") instead of generic labels where possible, but use "Resume A" and "Resume B" if you need to be brief.
 
     Resume A:
     """

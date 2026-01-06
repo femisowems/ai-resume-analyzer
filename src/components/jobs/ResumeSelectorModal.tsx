@@ -5,6 +5,7 @@ import { Modal } from '@/components/ui/Modal'
 import { fetchUserResumes } from '@/app/dashboard/jobs/actions-assets'
 import { Loader2, FileText, ChevronRight, Check, AlertTriangle } from 'lucide-react'
 import { toast } from '@/lib/toast'
+import { cn } from '@/lib/utils'
 
 interface ResumeSelectorModalProps {
     isOpen: boolean
@@ -76,43 +77,49 @@ export function ResumeSelectorModal({
         >
             <div className="flex flex-col md:flex-row h-[500px]">
                 {/* Left Side: Resume List */}
-                <div className="w-full md:w-1/2 border-r border-slate-100 overflow-y-auto bg-slate-50/30">
+                <div className="w-full md:w-1/2 border-r border-border overflow-y-auto bg-muted/30">
                     {isLoading ? (
                         <div className="flex items-center justify-center h-full">
-                            <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+                            <Loader2 className="w-6 h-6 animate-spin text-primary" />
                         </div>
                     ) : resumes.length === 0 ? (
-                        <div className="p-8 text-center text-slate-500">
+                        <div className="p-8 text-center text-muted-foreground">
                             No resumes found. Please upload one first.
                         </div>
                     ) : (
-                        <div className="divide-y divide-slate-100">
+                        <div className="divide-y divide-border/50">
                             {resumes.map((resume) => (
                                 <button
                                     key={resume.id}
                                     onClick={() => setSelectedResumeId(resume.id)}
-                                    className={`w-full p-4 text-left flex items-start gap-3 transition-colors ${selectedResumeId === resume.id
-                                        ? 'bg-indigo-50 ring-1 ring-inset ring-indigo-200'
-                                        : 'hover:bg-slate-50'
-                                        }`}
+                                    className={cn(
+                                        "w-full p-4 text-left flex items-start gap-3 transition-colors",
+                                        selectedResumeId === resume.id
+                                            ? 'bg-primary/5 ring-1 ring-inset ring-primary/20'
+                                            : 'hover:bg-muted/50'
+                                    )}
                                 >
-                                    <div className={`p-2 rounded-lg ${selectedResumeId === resume.id
-                                        ? 'bg-indigo-100 text-indigo-600'
-                                        : 'bg-slate-100 text-slate-500'
-                                        }`}>
+                                    <div className={cn(
+                                        "p-2 rounded-lg",
+                                        selectedResumeId === resume.id
+                                            ? 'bg-primary/10 text-primary'
+                                            : 'bg-muted text-muted-foreground'
+                                    )}>
                                         <FileText className="w-5 h-5" />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className={`font-medium truncate ${selectedResumeId === resume.id ? 'text-indigo-900' : 'text-slate-900'
-                                            }`}>
+                                        <p className={cn(
+                                            "font-medium truncate",
+                                            selectedResumeId === resume.id ? 'text-primary' : 'text-foreground'
+                                        )}>
                                             {resume.title}
                                         </p>
-                                        <p className="text-xs text-slate-500 mt-1">
+                                        <p className="text-xs text-muted-foreground mt-1">
                                             {resume.versions?.length || 0} versions
                                         </p>
                                     </div>
                                     {selectedResumeId === resume.id && (
-                                        <ChevronRight className="w-4 h-4 text-indigo-400 mt-1" />
+                                        <ChevronRight className="w-4 h-4 text-primary/60 mt-1" />
                                     )}
                                 </button>
                             ))}
@@ -121,15 +128,15 @@ export function ResumeSelectorModal({
                 </div>
 
                 {/* Right Side: Version List */}
-                <div className="w-full md:w-1/2 flex flex-col overflow-hidden bg-white">
+                <div className="w-full md:w-1/2 flex flex-col overflow-hidden bg-background">
                     {!selectedResumeId ? (
-                        <div className="flex-1 flex items-center justify-center p-8 text-center text-slate-400 italic">
+                        <div className="flex-1 flex items-center justify-center p-8 text-center text-muted-foreground/50 italic">
                             Select a resume to see versions
                         </div>
                     ) : (
                         <>
-                            <div className="p-4 border-b border-slate-100">
-                                <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Versions</h3>
+                            <div className="p-4 border-b border-border">
+                                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Versions</h3>
                             </div>
                             <div className="flex-1 overflow-y-auto p-2 space-y-2">
                                 {selectedResume?.versions?.sort((a: any, b: any) => b.version_number - a.version_number).map((version: any) => (
@@ -137,31 +144,33 @@ export function ResumeSelectorModal({
                                         key={version.id}
                                         onClick={() => handleConfirm(version.id)}
                                         disabled={isSubmitting || version.id === currentVersionId}
-                                        className={`w-full group p-3 rounded-xl border-2 text-left flex items-center justify-between transition-all ${version.id === currentVersionId
-                                            ? 'border-indigo-100 bg-indigo-50/30 opacity-80 cursor-default'
-                                            : 'border-slate-50 hover:border-indigo-200 hover:bg-slate-50'
-                                            }`}
+                                        className={cn(
+                                            "w-full group p-3 rounded-xl border-2 text-left flex items-center justify-between transition-all",
+                                            version.id === currentVersionId
+                                                ? 'border-primary/20 bg-primary/5 opacity-80 cursor-default'
+                                                : 'border-transparent hover:border-primary/20 hover:bg-muted/30'
+                                        )}
                                     >
                                         <div>
                                             <div className="flex items-center gap-2">
-                                                <span className="font-bold text-slate-900">v{version.version_number}</span>
+                                                <span className="font-bold text-foreground">v{version.version_number}</span>
                                                 {version.id === currentVersionId && (
-                                                    <span className="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded font-medium">Currently Used</span>
+                                                    <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-medium">Currently Used</span>
                                                 )}
                                             </div>
-                                            <p className="text-xs text-slate-400 mt-0.5">
+                                            <p className="text-xs text-muted-foreground mt-0.5">
                                                 {new Date(version.created_at).toLocaleDateString()}
                                             </p>
                                         </div>
 
                                         {version.id === currentVersionId ? (
-                                            <Check className="w-5 h-5 text-indigo-500" />
+                                            <Check className="w-5 h-5 text-primary" />
                                         ) : (
-                                            <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div className="w-8 h-8 rounded-full bg-muted/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                                 {isSubmitting ? (
                                                     <Loader2 className="w-4 h-4 animate-spin" />
                                                 ) : (
-                                                    <Check className="w-4 h-4 text-slate-400" />
+                                                    <Check className="w-4 h-4 text-muted-foreground" />
                                                 )}
                                             </div>
                                         )}
@@ -170,7 +179,7 @@ export function ResumeSelectorModal({
                             </div>
 
                             {/* Warning Footer */}
-                            <div className="p-4 bg-amber-50 border-t border-amber-100">
+                            <div className="p-4 bg-amber-500/10 border-t border-amber-500/20">
                                 <div className="flex gap-2 items-start">
                                     <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5" />
                                     <p className="text-[10px] text-amber-700 leading-relaxed">
@@ -185,3 +194,4 @@ export function ResumeSelectorModal({
         </Modal>
     )
 }
+

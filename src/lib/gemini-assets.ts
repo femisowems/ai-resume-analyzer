@@ -18,6 +18,17 @@ export interface DocumentStatusEvaluation {
     confidence: number;
 }
 
+
+// Helper to ensure reason is a string (sanitizing AI output)
+function ensureString(value: any): string {
+    if (typeof value === 'string') return value;
+    if (value && typeof value === 'object') {
+        if (value.content && typeof value.content === 'string') return value.content;
+        return JSON.stringify(value);
+    }
+    return String(value || '');
+}
+
 export async function evaluateDocumentStatus(params: {
     document_type: DocumentType;
     current_resume_version: string;
@@ -56,7 +67,11 @@ Output JSON:
         const result = await model.generateContent(prompt);
         const text = result.response.text();
         const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
-        return JSON.parse(cleanJson) as DocumentStatusEvaluation;
+        const data = JSON.parse(cleanJson);
+        return {
+            ...data,
+            reason: ensureString(data.reason)
+        } as DocumentStatusEvaluation;
     } catch (error) {
         console.error("Gemini Document Status Evaluation Error:", error);
         // Fallback rule-based logic
@@ -132,7 +147,15 @@ Output JSON:
         const result = await model.generateContent(prompt);
         const text = result.response.text();
         const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
-        return JSON.parse(cleanJson) as ResumeDependencyAnalysis;
+        const data = JSON.parse(cleanJson);
+
+        return {
+            summary: ensureString(data.summary),
+            documents_to_update: (data.documents_to_update || []).map((d: any) => ({
+                ...d,
+                reason: ensureString(d.reason)
+            }))
+        } as ResumeDependencyAnalysis;
     } catch (error) {
         console.error("Gemini Resume Dependency Analysis Error:", error);
         // Fallback: Mark all cover letters as needing update
@@ -359,7 +382,7 @@ Output JSON (array of evaluations):
         for (const evaluation of data.evaluations) {
             evaluationMap.set(evaluation.id, {
                 status: evaluation.status,
-                reason: evaluation.reason,
+                reason: ensureString(evaluation.reason),
                 confidence: evaluation.confidence
             });
         }

@@ -2,7 +2,7 @@
 
 import { Job } from '@/lib/types'
 import { cn } from '@/lib/utils'
-import { Building2, CalendarClock, MoreHorizontal } from 'lucide-react'
+import { CalendarClock, MoreHorizontal } from 'lucide-react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { formatDistanceToNow } from 'date-fns'
@@ -38,9 +38,9 @@ export function JobCard({ job, onClick }: JobCardProps) {
 
     // Status color pill logic
     const getStatusColor = () => {
-        if (daysInStage > 14) return 'bg-red-50 text-red-700 border-red-200'
+        if (daysInStage > 14) return 'bg-destructive/10 text-destructive border-destructive/20'
         if (daysInStage > 7) return 'bg-amber-50 text-amber-700 border-amber-200'
-        return 'bg-slate-50 text-slate-700 border-slate-200'
+        return 'bg-secondary text-secondary-foreground border-transparent'
     }
 
     return (
@@ -51,7 +51,7 @@ export function JobCard({ job, onClick }: JobCardProps) {
             {...attributes}
             onClick={onClick}
             className={cn(
-                "group relative bg-white border border-slate-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-all cursor-grab active:cursor-grabbing",
+                "group relative bg-card border border-border rounded-lg p-4 shadow-sm hover:shadow-md transition-all cursor-grab active:cursor-grabbing",
                 isDragging && "opacity-50 shadow-xl scale-105 z-50",
                 job.match_score && job.match_score > 85 && "border-l-4 border-l-emerald-500" // High match indicator
             )}
@@ -63,15 +63,15 @@ export function JobCard({ job, onClick }: JobCardProps) {
                         companyName={job.company_name}
                         logoUrl={job.company_logo || job.company_logo_cache}
                         size={40}
-                        className="flex-shrink-0"
+                        className="flex-shrink-0 rounded-md"
                     />
                     <div>
-                        <h3 className="text-sm font-semibold text-slate-900 leading-tight line-clamp-1">{job.role}</h3>
-                        <p className="text-xs text-slate-500 font-medium truncate max-w-[120px]">{job.company_name}</p>
+                        <h3 className="text-sm font-semibold text-foreground leading-tight line-clamp-1">{job.role}</h3>
+                        <p className="text-xs text-muted-foreground font-medium truncate max-w-[120px] mt-0.5">{job.company_name}</p>
                     </div>
                 </div>
                 <button
-                    className="p-1 text-slate-400 hover:text-slate-600 rounded bg-transparent hover:bg-slate-100"
+                    className="p-1 text-muted-foreground hover:text-foreground rounded bg-transparent hover:bg-secondary"
                     onClick={(e) => {
                         e.stopPropagation()
                         // Open menu
@@ -92,14 +92,15 @@ export function JobCard({ job, onClick }: JobCardProps) {
                 </div>
 
                 {job.match_score && (
-                    <div className="text-[10px] font-bold text-slate-600">
+                    <div className="text-[10px] font-bold text-muted-foreground">
                         {job.match_score}% Match
                     </div>
                 )}
             </div>
 
             {/* Hover Actions Overlay (Desktop) */}
-            <div className="absolute inset-x-0 bottom-0 h-1 bg-indigo-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-left rounded-b-lg opacity-0 group-hover:opacity-100" />
+            <div className="absolute inset-x-0 bottom-0 h-1 bg-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-left rounded-b-lg opacity-0 group-hover:opacity-100" />
         </div>
     )
 }
+

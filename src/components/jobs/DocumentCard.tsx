@@ -3,6 +3,7 @@
 import { JobDocument } from '@/lib/types'
 import { FileText, Eye, RefreshCw, Clock, CheckCircle, AlertTriangle, XCircle, Plus } from 'lucide-react'
 import { useState } from 'react'
+import { cn } from '@/lib/utils'
 
 interface DocumentCardProps {
     document: JobDocument
@@ -41,37 +42,37 @@ export function DocumentCard({ document, variant, onView, onRegenerate, onGenera
             case 'ready':
                 return {
                     icon: CheckCircle,
-                    label: '✅ Ready',
-                    color: 'bg-green-100 text-green-800 border-green-200',
-                    cardBorder: 'border-gray-300'
+                    label: 'Ready',
+                    color: 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20',
+                    cardBorder: 'border-border'
                 }
             case 'needs_update':
                 return {
                     icon: AlertTriangle,
-                    label: '⚠ Needs Update',
-                    color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-                    cardBorder: 'border-yellow-300'
+                    label: 'Needs Update',
+                    color: 'bg-amber-500/10 text-amber-700 border-amber-500/20',
+                    cardBorder: 'border-amber-500/50'
                 }
             case 'draft':
                 return {
                     icon: Clock,
-                    label: '🕓 Draft',
-                    color: 'bg-gray-100 text-gray-600 border-gray-200',
-                    cardBorder: 'border-gray-300 border-dashed'
+                    label: 'Draft',
+                    color: 'bg-secondary text-secondary-foreground border-border',
+                    cardBorder: 'border-border border-dashed'
                 }
             case 'missing':
                 return {
                     icon: XCircle,
-                    label: '❌ Missing',
-                    color: 'bg-red-100 text-red-800 border-red-200',
-                    cardBorder: 'border-red-300 border-dashed'
+                    label: 'Missing',
+                    color: 'bg-destructive/10 text-destructive border-destructive/20',
+                    cardBorder: 'border-destructive/30 border-dashed'
                 }
             default:
                 return {
                     icon: FileText,
                     label: 'Unknown',
-                    color: 'bg-gray-100 text-gray-600 border-gray-200',
-                    cardBorder: 'border-gray-300'
+                    color: 'bg-secondary text-secondary-foreground border-border',
+                    cardBorder: 'border-border'
                 }
         }
     }
@@ -90,30 +91,30 @@ export function DocumentCard({ document, variant, onView, onRegenerate, onGenera
             : null
 
     return (
-        <div className={`bg-white border-2 ${statusConfig.cardBorder} rounded-lg p-5 shadow-sm hover:shadow-md transition-shadow`}>
+        <div className={cn("bg-card border rounded-lg p-5 shadow-sm hover:shadow-md transition-shadow", statusConfig.cardBorder)}>
             <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 bg-gray-100 rounded-lg">
-                        <FileText className="w-5 h-5 text-gray-600" />
+                    <div className="p-2 bg-muted rounded-lg">
+                        <FileText className="w-5 h-5 text-muted-foreground" />
                     </div>
                     <div>
-                        <h4 className="text-base font-semibold text-gray-900">
+                        <h4 className="text-base font-semibold text-foreground">
                             {documentTypeLabel}
                         </h4>
                         {formattedDate && (
-                            <p className="text-xs text-gray-500 mt-0.5">
+                            <p className="text-xs text-muted-foreground mt-0.5">
                                 {document.last_updated_at ? 'Updated' : 'Generated'} {formattedDate}
                             </p>
                         )}
                     </div>
                 </div>
-                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${statusConfig.color}`}>
+                <span className={cn("inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border", statusConfig.color)}>
                     {statusConfig.label}
                 </span>
             </div>
 
             {document.status_reason && (
-                <div className="mb-3 p-2 bg-gray-50 rounded text-xs text-gray-600">
+                <div className="mb-3 p-2 bg-secondary/50 rounded text-xs text-muted-foreground">
                     {document.status_reason}
                 </div>
             )}
@@ -122,7 +123,7 @@ export function DocumentCard({ document, variant, onView, onRegenerate, onGenera
                 {document.document_id && onView && (
                     <button
                         onClick={onView}
-                        className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                        className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-input text-sm font-medium rounded-md text-foreground bg-background hover:bg-secondary transition-colors"
                     >
                         <Eye className="w-4 h-4 mr-2" />
                         View
@@ -132,9 +133,9 @@ export function DocumentCard({ document, variant, onView, onRegenerate, onGenera
                     <button
                         onClick={handleRegenerate}
                         disabled={isRegenerating}
-                        className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-primary-foreground bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                        <RefreshCw className={`w-4 h-4 mr-2 ${isRegenerating ? 'animate-spin' : ''}`} />
+                        <RefreshCw className={cn("w-4 h-4 mr-2", isRegenerating && "animate-spin")} />
                         {isRegenerating ? 'Regenerating...' : 'Regenerate'}
                     </button>
                 )}
@@ -142,7 +143,7 @@ export function DocumentCard({ document, variant, onView, onRegenerate, onGenera
                     <button
                         onClick={handleGenerate}
                         disabled={isGenerating}
-                        className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-70 disabled:cursor-not-allowed"
+                        className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-primary-foreground bg-primary hover:bg-primary/90 disabled:opacity-70 disabled:cursor-not-allowed transition-colors"
                     >
                         {isGenerating ? (
                             <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
@@ -156,3 +157,4 @@ export function DocumentCard({ document, variant, onView, onRegenerate, onGenera
         </div>
     )
 }
+

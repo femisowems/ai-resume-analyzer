@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Briefcase, ChevronDown, Check } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Job } from '@/lib/types'
+import { cn } from '@/lib/utils'
 
 interface JobTargetSelectorProps {
     jobs: Job[]
@@ -33,13 +34,14 @@ export default function JobTargetSelector({ jobs }: JobTargetSelectorProps) {
         <div className="relative">
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm transition-all border shadow-sm
-                    ${selectedJob
-                        ? 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100'
-                        : 'bg-white text-gray-700 border-gray-200 hover:border-indigo-300 hover:bg-gray-50'
-                    }`}
+                className={cn(
+                    "flex items-center space-x-2 px-3 py-2 rounded-lg text-sm transition-all border shadow-sm",
+                    selectedJob
+                        ? 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/15'
+                        : 'bg-background text-foreground border-border hover:border-primary/30 hover:bg-muted/50'
+                )}
             >
-                <Briefcase className={`h-4 w-4 ${selectedJob ? 'text-indigo-600' : 'text-gray-500'}`} />
+                <Briefcase className={cn("h-4 w-4", selectedJob ? 'text-primary' : 'text-muted-foreground')} />
                 <span className="font-medium max-w-[200px] truncate">
                     {selectedJob ? `${selectedJob.role} @ ${selectedJob.company_name}` : 'General Analysis (No Target)'}
                 </span>
@@ -47,32 +49,32 @@ export default function JobTargetSelector({ jobs }: JobTargetSelectorProps) {
             </button>
 
             {isOpen && (
-                <div className="absolute top-full mt-2 left-0 w-80 bg-white rounded-lg shadow-xl border border-gray-100 py-1 z-50 max-h-96 overflow-y-auto">
-                    <div className="px-3 py-2 border-b border-gray-100 bg-gray-50">
-                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Target A Job Application</p>
+                <div className="absolute top-full mt-2 left-0 w-80 bg-popover rounded-lg shadow-xl border border-border py-1 z-50 max-h-96 overflow-y-auto">
+                    <div className="px-3 py-2 border-b border-border bg-muted/30">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Target A Job Application</p>
                     </div>
 
                     <button
                         onClick={() => handleSelect(null)}
-                        className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-between group"
+                        className="w-full text-left px-4 py-3 text-sm text-foreground hover:bg-muted/50 flex items-center justify-between group transition-colors"
                     >
-                        <span className={!selectedJob ? 'font-semibold text-indigo-600' : ''}>Generic / General Base</span>
-                        {!selectedJob && <Check className="h-4 w-4 text-indigo-600" />}
+                        <span className={!selectedJob ? 'font-semibold text-primary' : ''}>Generic / General Base</span>
+                        {!selectedJob && <Check className="h-4 w-4 text-primary" />}
                     </button>
 
                     {jobs.map((job) => (
                         <button
                             key={job.id}
                             onClick={() => handleSelect(job.id)}
-                            className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-between border-t border-gray-50"
+                            className="w-full text-left px-4 py-3 text-sm text-foreground hover:bg-muted/50 flex items-center justify-between border-t border-border/50 transition-colors"
                         >
                             <div className="flex flex-col overflow-hidden mr-3">
-                                <span className={`font-medium truncate ${selectedJob?.id === job.id ? 'text-indigo-700' : 'text-gray-900'}`}>
+                                <span className={cn("font-medium truncate", selectedJob?.id === job.id ? 'text-primary' : 'text-foreground')}>
                                     {job.role}
                                 </span>
-                                <span className="text-xs text-gray-500 truncate">{job.company_name}</span>
+                                <span className="text-xs text-muted-foreground truncate">{job.company_name}</span>
                             </div>
-                            {selectedJob?.id === job.id && <Check className="h-4 w-4 text-indigo-600 flex-shrink-0" />}
+                            {selectedJob?.id === job.id && <Check className="h-4 w-4 text-primary flex-shrink-0" />}
                         </button>
                     ))}
                 </div>
@@ -85,3 +87,4 @@ export default function JobTargetSelector({ jobs }: JobTargetSelectorProps) {
         </div>
     )
 }
+

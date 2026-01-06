@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import { Menu, X } from 'lucide-react'
 import Logo from '@/components/Logo'
 import { MAIN_NAVIGATION, USER_NAVIGATION } from '@/config/navigation'
+import { cn } from '@/lib/utils'
 
 interface DashboardNavigationProps {
     userEmail?: string | null
@@ -24,24 +25,28 @@ export default function DashboardNavigation({ userEmail }: DashboardNavigationPr
     return (
         <nav className="bg-background shadow-sm border-b border-border">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex justify-between h-16">
-                    <div className="flex">
+                <div className="flex justify-between h-16 items-center">
+                    <div className="flex items-center gap-8">
                         <div className="flex-shrink-0 flex items-center">
                             <Logo />
                         </div>
                         {/* Desktop Navigation */}
-                        <div className="hidden sm:-my-px sm:ml-6 sm:flex sm:space-x-8">
+                        <div className="hidden sm:flex sm:space-x-1">
                             {MAIN_NAVIGATION.map((item) => (
                                 <Link
                                     key={item.href}
                                     href={item.href}
-                                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-200 ${isActive(item.href, item.exact)
-                                        ? 'border-primary text-foreground'
-                                        : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
-                                        }`}
+                                    className={cn(
+                                        "inline-flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                                        isActive(item.href, item.exact)
+                                            ? "bg-secondary text-foreground"
+                                            : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                                    )}
                                 >
-                                    <item.icon className={`w-4 h-4 mr-2 ${isActive(item.href, item.exact) ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
-                                        }`} />
+                                    <item.icon className={cn(
+                                        "mr-2 h-4 w-4",
+                                        isActive(item.href, item.exact) ? "text-foreground" : "text-muted-foreground"
+                                    )} />
                                     {item.name}
                                 </Link>
                             ))}
@@ -49,15 +54,18 @@ export default function DashboardNavigation({ userEmail }: DashboardNavigationPr
                     </div>
 
                     {/* User Menu & Mobile Toggle */}
-                    <div className="hidden sm:ml-6 sm:flex sm:items-center">
+                    <div className="hidden sm:ml-6 sm:flex sm:items-center gap-2">
+                        {/* We can add a specialized UserButton here later, for now just a link */}
                         {USER_NAVIGATION.map((item) => (
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                className="flex items-center text-sm text-muted-foreground hover:text-primary transition"
+                                className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
                             >
-                                <item.icon className="w-4 h-4 mr-2" />
-                                {userEmail}
+                                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
+                                    {userEmail?.[0]?.toUpperCase() || 'U'}
+                                </div>
+                                <span className="max-w-[100px] truncate">{userEmail}</span>
                             </Link>
                         ))}
                     </div>

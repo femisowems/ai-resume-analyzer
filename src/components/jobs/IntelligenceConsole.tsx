@@ -1,5 +1,6 @@
 import { Job, JobStatus } from '@/lib/types'
 import { BrainCircuit, CheckCircle2, Clock, Inbox, Sparkles } from 'lucide-react'
+import { Button } from "@/components/ui/button"
 
 interface IntelligenceConsoleProps {
     jobs: Job[]
@@ -40,9 +41,12 @@ export function IntelligenceConsole({ jobs }: IntelligenceConsoleProps) {
                                 : "All applications are moving within expected timelines. Consider applying to 2 more 'High Match' roles to keep velocity up."
                             }
                         </p>
-                        <button className="mt-4 px-4 py-2 bg-white text-indigo-900 border border-transparent rounded-lg text-xs font-semibold hover:bg-indigo-50 transition-colors">
+                        <Button
+                            variant="secondary"
+                            className="mt-4 bg-white text-indigo-900 hover:bg-indigo-50 border-transparent shadow-none"
+                        >
                             View Priority Queue
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </div>
@@ -79,15 +83,15 @@ export function IntelligenceConsole({ jobs }: IntelligenceConsoleProps) {
 function StatCard({ label, value, icon, highlight, alert }: { label: string, value: number, icon: React.ReactNode, highlight?: boolean, alert?: boolean }) {
     return (
         <div className={`
-            p-4 rounded-xl border bg-white shadow-sm flex flex-col gap-3
-            ${highlight ? 'ring-2 ring-emerald-500/20 border-emerald-500/30 bg-emerald-50/10' : 'border-slate-200'}
+            p-4 rounded-xl border bg-card shadow-sm flex flex-col gap-3
+            ${highlight ? 'ring-2 ring-emerald-500/20 border-emerald-500/30 bg-emerald-50/10' : 'border-border'}
             ${alert ? 'ring-2 ring-amber-500/20 border-amber-500/30 bg-amber-50/10' : ''}
         `}>
-            <div className="flex items-center justify-between text-slate-500">
+            <div className="flex items-center justify-between text-muted-foreground">
                 <span className="text-xs font-medium uppercase tracking-wider">{label}</span>
                 {icon}
             </div>
-            <div className="text-2xl font-bold text-slate-900">
+            <div className="text-2xl font-bold text-foreground">
                 {value}
             </div>
         </div>

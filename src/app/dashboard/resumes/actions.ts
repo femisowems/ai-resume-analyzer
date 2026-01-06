@@ -142,12 +142,16 @@ export async function compareResumesAction(resumeIdA: string, resumeIdB: string)
     const textB = contentB?.raw_text || JSON.stringify(contentB) || ''
 
     // Check if we have enough text
+    if (!resumeA || !resumeB) {
+        throw new Error('Could not find both resumes')
+    }
+
     if (textA.length < 50 || textB.length < 50) {
         throw new Error('One or more resumes do not have enough text to analyze. Please ensure they are properly parsed.')
     }
 
     // Call Gemini
-    const result = await compareResumesWithGemini(textA, textB)
+    const result = await compareResumesWithGemini(textA, textB, resumeA.title, resumeB.title)
 
     // Save to DB
     const { error: saveError } = await supabase

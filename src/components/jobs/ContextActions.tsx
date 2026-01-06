@@ -17,16 +17,16 @@ export function ContextActions({ actions, onActionClick }: ContextActionsProps) 
     const secondaryAction = actions.find(a => a.priority === 'secondary')
 
     return (
-        <div className="sticky bottom-0 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl p-6 shadow-lg">
+        <div className="sticky bottom-0 bg-primary text-primary-foreground rounded-xl p-6 shadow-lg">
             <div className="flex items-start gap-4">
-                <div className="p-3 bg-white/20 rounded-lg">
-                    <Sparkles className="w-6 h-6 text-white" />
+                <div className="p-3 bg-primary-foreground/10 rounded-lg backdrop-blur-sm">
+                    <Sparkles className="w-6 h-6 text-primary-foreground" />
                 </div>
                 <div className="flex-1">
-                    <h3 className="text-lg font-bold text-white mb-1">
+                    <h3 className="text-lg font-bold text-primary-foreground mb-1">
                         Recommended Next Action
                     </h3>
-                    <p className="text-sm text-indigo-100 mb-4">
+                    <p className="text-sm text-primary-foreground/80 mb-4">
                         AI-powered suggestion based on your application stage
                     </p>
 
@@ -34,7 +34,7 @@ export function ContextActions({ actions, onActionClick }: ContextActionsProps) 
                         {primaryAction && (
                             <button
                                 onClick={() => onActionClick(primaryAction)}
-                                className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-indigo-600 bg-white hover:bg-indigo-50 transition-colors"
+                                className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-primary bg-background hover:bg-muted transition-colors"
                             >
                                 {primaryAction.label}
                                 <ArrowRight className="ml-2 w-5 h-5" />
@@ -43,7 +43,7 @@ export function ContextActions({ actions, onActionClick }: ContextActionsProps) 
                         {secondaryAction && (
                             <button
                                 onClick={() => onActionClick(secondaryAction)}
-                                className="inline-flex items-center justify-center px-6 py-3 border-2 border-white text-base font-medium rounded-md text-white hover:bg-white/10 transition-colors"
+                                className="inline-flex items-center justify-center px-6 py-3 border-2 border-primary-foreground/20 text-base font-medium rounded-md text-primary-foreground hover:bg-primary-foreground/10 transition-colors"
                             >
                                 {secondaryAction.label}
                             </button>
@@ -54,3 +54,4 @@ export function ContextActions({ actions, onActionClick }: ContextActionsProps) 
         </div>
     )
 }
+

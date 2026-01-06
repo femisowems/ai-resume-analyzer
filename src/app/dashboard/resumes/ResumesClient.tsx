@@ -6,6 +6,7 @@ import { Plus, SlidersHorizontal, X } from 'lucide-react'
 import ResumeStatsCard from './components/ResumeStatsCard'
 import BestResumeHighlight from './components/BestResumeHighlight'
 import { compareResumesAction, analyzeResumeAction } from './actions'
+import { Button } from "@/components/ui/button"
 
 export interface ResumeWithStats {
     id: string
@@ -87,50 +88,49 @@ export default function ResumesClient({ resumes, bestResume }: ResumesClientProp
                     {isCompareMode ? (
                         <>
                             <div className="flex items-center gap-2 mr-2">
-                                <span className="text-sm text-gray-600 font-medium">{selectedIds.length} selected</span>
+                                <span className="text-sm text-foreground font-medium">{selectedIds.length} selected</span>
                             </div>
-                            <button
+                            <Button
                                 onClick={handleCompare}
                                 disabled={selectedIds.length !== 2 || isComparing}
-                                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all"
                             >
                                 {isComparing ? (
                                     <>
-                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                                        <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin mr-2" />
                                         Analyzing...
                                     </>
                                 ) : 'Run Comparison'}
-                            </button>
-                            <button
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="icon"
                                 onClick={() => {
                                     setIsCompareMode(false)
                                     setSelectedIds([])
                                     setComparisonResult(null)
                                     setError(null)
                                 }}
-                                className="inline-flex items-center p-2 border border-gray-300 shadow-sm rounded-md text-gray-700 bg-white hover:bg-gray-50"
                             >
                                 <X className="h-5 w-5" />
-                            </button>
+                            </Button>
                         </>
                     ) : (
-                        <button
+                        <Button
+                            variant="outline"
                             onClick={() => setIsCompareMode(true)}
-                            className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors"
                         >
                             <SlidersHorizontal className="mr-2 h-4 w-4" />
                             Compare Resumes
-                        </button>
+                        </Button>
                     )}
 
                     {!isCompareMode && (
-                        <Link
-                            href="/dashboard/resumes/new"
-                            className="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors"
-                        >
-                            <Plus className="mr-2 h-4 w-4" />
-                            Upload New
-                        </Link>
+                        <Button asChild>
+                            <Link href="/dashboard/resumes/new">
+                                <Plus className="mr-2 h-4 w-4" />
+                                Upload New
+                            </Link>
+                        </Button>
                     )}
                 </div>
             </div>
@@ -155,7 +155,13 @@ export default function ResumesClient({ resumes, bestResume }: ResumesClientProp
                             <div>
                                 <h2 className="text-2xl font-bold text-gray-900">Comparison Results</h2>
                                 <p className="text-sm text-gray-500 mt-1">
-                                    Winner: <span className="font-bold text-indigo-600">{comparisonResult.winner_id === 'A' ? 'Resume A' : comparisonResult.winner_id === 'B' ? 'Resume B' : 'Tie'}</span>
+                                    Winner: <span className="font-bold text-indigo-600">
+                                        {comparisonResult.winner_id === 'A'
+                                            ? resumes.find(r => r.id === selectedIds[0])?.title
+                                            : comparisonResult.winner_id === 'B'
+                                                ? resumes.find(r => r.id === selectedIds[1])?.title
+                                                : 'Tie'}
+                                    </span>
                                 </p>
                             </div>
                             <button onClick={() => setComparisonResult(null)} className="text-gray-400 hover:text-gray-600">
@@ -175,7 +181,7 @@ export default function ResumesClient({ resumes, bestResume }: ResumesClientProp
                         <div className="grid md:grid-cols-2 gap-6 mb-8">
                             <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
                                 <div className="flex items-center justify-between mb-4">
-                                    <h3 className="font-bold text-gray-900">Resume A Strengths</h3>
+                                    <h3 className="font-bold text-gray-900">{resumes.find(r => r.id === selectedIds[0])?.title || 'Resume A'} Strengths</h3>
                                     {comparisonResult.winner_id === 'A' && <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-bold">WINNER</span>}
                                 </div>
                                 <ul className="space-y-2">
@@ -189,7 +195,7 @@ export default function ResumesClient({ resumes, bestResume }: ResumesClientProp
                             </div>
                             <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
                                 <div className="flex items-center justify-between mb-4">
-                                    <h3 className="font-bold text-gray-900">Resume B Strengths</h3>
+                                    <h3 className="font-bold text-gray-900">{resumes.find(r => r.id === selectedIds[1])?.title || 'Resume B'} Strengths</h3>
                                     {comparisonResult.winner_id === 'B' && <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-bold">WINNER</span>}
                                 </div>
                                 <ul className="space-y-2">
@@ -227,7 +233,11 @@ export default function ResumesClient({ resumes, bestResume }: ResumesClientProp
                                             </span>
                                             <div className="mt-2 text-sm font-medium text-gray-500">
                                                 Advantage: <span className={diff.winner === 'A' ? 'text-blue-600 font-bold' : diff.winner === 'B' ? 'text-purple-600 font-bold' : 'text-gray-600'}>
-                                                    {diff.winner === 'A' ? 'Resume A' : diff.winner === 'B' ? 'Resume B' : 'Tie'}
+                                                    {diff.winner === 'A'
+                                                        ? resumes.find(r => r.id === selectedIds[0])?.title
+                                                        : diff.winner === 'B'
+                                                            ? resumes.find(r => r.id === selectedIds[1])?.title
+                                                            : 'Tie'}
                                                 </span>
                                             </div>
                                         </div>
@@ -294,8 +304,8 @@ export default function ResumesClient({ resumes, bestResume }: ResumesClientProp
                         )}
                         <div
                             className={`transition-all duration-200 ${selectedIds.includes(resume.id)
-                                    ? 'ring-2 ring-indigo-500 rounded-xl transform scale-[1.02] shadow-md'
-                                    : isCompareMode ? 'opacity-70 hover:opacity-100' : ''
+                                ? 'ring-2 ring-indigo-500 rounded-xl transform scale-[1.02] shadow-md'
+                                : isCompareMode ? 'opacity-70 hover:opacity-100' : ''
                                 }`}
                         >
                             <ResumeStatsCard

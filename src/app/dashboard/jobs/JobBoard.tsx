@@ -7,6 +7,7 @@ import { useJobStore } from '@/lib/store/useJobStore'
 import { useEffect, useState } from 'react'
 import { JobActionDrawer } from '@/components/jobs/JobActionDrawer'
 import QuickTrackModal from '@/components/jobs/QuickTrackModal'
+import { Button } from '@/components/ui/button'
 
 interface JobBoardProps {
     initialJobs: Job[]
@@ -40,19 +41,19 @@ export default function JobBoard({ initialJobs }: JobBoardProps) {
     const [isQuickTrackOpen, setIsQuickTrackOpen] = useState(false)
 
     return (
-        <div className="flex flex-col h-full bg-slate-50">
+        <div className="flex flex-col h-full bg-background">
             {/* Header Area (Integrated here for State Access) */}
             <div className="flex-shrink-0 px-6 pt-6 pb-2 flex justify-between items-center">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Jobs</h1>
-                    <p className="text-slate-500 text-sm">Track and manage your applications</p>
+                    <h1 className="text-2xl font-bold tracking-tight text-foreground">Jobs</h1>
+                    <p className="text-muted-foreground text-sm">Track and manage your applications</p>
                 </div>
-                <button
+                <Button
                     onClick={() => setIsQuickTrackOpen(true)}
-                    className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm inline-flex items-center"
+                    className="shadow-sm"
                 >
                     + Quick Track
-                </button>
+                </Button>
             </div>
 
             {/* Top Intelligence Layer */}

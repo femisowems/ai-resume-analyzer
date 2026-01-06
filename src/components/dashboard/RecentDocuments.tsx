@@ -2,40 +2,51 @@
 
 import { FileText, Download, Copy, Eye } from 'lucide-react'
 import Link from 'next/link'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 
 export default function RecentDocuments({ docs }: { docs: any[] }) {
     if (!docs || docs.length === 0) return null
 
     return (
-        <div className="bg-card rounded-2xl p-6 shadow-sm border border-border">
-            <h2 className="text-lg font-bold text-card-foreground mb-4">Quick Access</h2>
-            <div className="space-y-3">
-                {docs.map((doc) => (
-                    <div key={doc.id} className="group flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors border border-transparent hover:border-border">
-                        <div className="flex items-center gap-3 overflow-hidden">
-                            <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                                <FileText size={20} />
+        <Card>
+            <CardHeader className="pb-3">
+                <CardTitle className="text-lg font-bold">Quick Access</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="space-y-1">
+                    {docs.map((doc) => (
+                        <div key={doc.id} className="group flex items-center justify-between px-3 py-1.5 rounded-lg hover:bg-muted/50 transition-colors border border-transparent hover:border-border">
+                            <div className="flex items-center gap-3 overflow-hidden">
+                                <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                                    <FileText size={16} />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <h3 className="text-sm font-medium text-foreground truncate">{doc.title}</h3>
+                                    <p className="text-[10px] text-muted-foreground capitalize truncate mt-0.5">{doc.type?.replace('_', ' ')} • {new Date(doc.date).toLocaleDateString()}</p>
+                                </div>
                             </div>
-                            <div className="min-w-0">
-                                <h3 className="text-sm font-medium text-card-foreground truncate">{doc.title}</h3>
-                                <p className="text-xs text-muted-foreground capitalize">{doc.type?.replace('_', ' ')} • {new Date(doc.date).toLocaleDateString()}</p>
-                            </div>
-                        </div>
 
-                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button className="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-colors" title="Copy Content">
-                                <Copy size={16} />
-                            </button>
-                            <Link href={`/dashboard/documents`} className="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-colors" title="View">
-                                <Eye size={16} />
-                            </Link>
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary" title="Copy Content">
+                                    <Copy size={14} />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary" title="View" asChild>
+                                    <Link href={`/dashboard/documents`}>
+                                        <Eye size={14} />
+                                    </Link>
+                                </Button>
+                            </div>
                         </div>
-                    </div>
-                ))}
-            </div>
-            <Link href="/dashboard/documents" className="block mt-4 text-center text-sm text-muted-foreground hover:text-primary font-medium transition-colors">
-                View All Documents
-            </Link>
-        </div>
+                    ))}
+                </div>
+                <Button variant="link" size="sm" className="w-full mt-2 text-muted-foreground hover:text-primary h-8 text-xs" asChild>
+                    <Link href="/dashboard/documents">
+                        View All Documents
+                    </Link>
+                </Button>
+            </CardContent>
+        </Card>
     )
 }
+
