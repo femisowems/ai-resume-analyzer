@@ -5,9 +5,9 @@ import { ResumeAnchor } from './ResumeAnchor'
 import { RequiredDocuments } from './RequiredDocuments'
 import { PostInterviewDocuments } from './PostInterviewDocuments'
 import { ContextActions } from './ContextActions'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { regenerateJobDocument, generateJobDocument, changeJobResume } from '@/app/dashboard/jobs/actions-assets'
+import { regenerateJobDocument, generateJobDocument, changeJobResume, fetchSuggestedActions } from '@/app/dashboard/jobs/actions-assets'
 import { toast } from '@/lib/toast'
 import { ResumeSelectorModal } from './ResumeSelectorModal'
 import { DocumentViewerModal } from './DocumentViewerModal'
@@ -23,6 +23,28 @@ export function ApplicationAssets({ jobId, jobStage, assetsData }: ApplicationAs
     const [isGenerating, setIsGenerating] = useState(false)
     const [isResumeModalOpen, setIsResumeModalOpen] = useState(false)
     const [viewingDocument, setViewingDocument] = useState<JobDocument | null>(null)
+
+    // Client-side AI Actions Fetching
+    const [nextActions, setNextActions] = useState<ContextAction[]>(assetsData.next_actions || [])
+    const [isLoadingActions, setIsLoadingActions] = useState(true)
+
+    useEffect(() => {
+        let isMounted = true;
+        async function loadActions() {
+            try {
+                const actions = await fetchSuggestedActions(jobId)
+                if (isMounted) {
+                    setNextActions(actions)
+                }
+            } catch (error) {
+                console.error("Failed to load suggestions", error)
+            } finally {
+                if (isMounted) setIsLoadingActions(false)
+            }
+        }
+        loadActions()
+        return () => { isMounted = false }
+    }, [jobId])
 
     const handleChangeResume = () => {
         setIsResumeModalOpen(true)
@@ -160,8 +182,9 @@ export function ApplicationAssets({ jobId, jobStage, assetsData }: ApplicationAs
 
             {/* Context-Aware Actions */}
             <ContextActions
-                actions={assetsData.next_actions}
+                actions={nextActions}
                 onActionClick={handleActionClick}
+                isLoading={isLoadingActions}
             />
 
             {/* Modals */}

@@ -17,31 +17,48 @@ function normalizeAnalysis(analysis: any): AnalysisResult {
     return safeParseAnalysis(analysis)
 }
 
-function normalizeContent(content: any): StructuredResumeContent {
-    // If it's already "structured" with sections
-    if (content.summary && typeof content.summary === 'object') {
-        return content as StructuredResumeContent
+// Helper to normalize a single section
+function normalizeSection(section: any): { content: string } {
+    if (section && typeof section === 'object' && 'content' in section) {
+        return section as { content: string }
     }
+    return { content: String(section || '') }
+}
 
-    // Legacy fallback
+function normalizeContent(content: any): StructuredResumeContent {
+    // If it's already "structured" and fields are correct, we trust it, but mixed states (legacy + AI) cause issues.
+    // So we safely normalize each field.
+
     return {
-        summary: { content: content.summary || '' },
-        contact_info: { content: content.contact_info || '' },
-        skills: { content: Array.isArray(content.skills) ? content.skills.join(', ') : (content.skills || '') },
+        summary: normalizeSection(content.summary),
+        contact_info: normalizeSection(content.contact_info),
+
+        // Skills is tricky because it could be array of strings (legacy) or object { content: string }
+        skills: (content.skills && typeof content.skills === 'object' && !Array.isArray(content.skills) && 'content' in content.skills)
+            ? content.skills
+            : { content: Array.isArray(content.skills) ? content.skills.join(', ') : (content.skills || '') },
+
         experience: Array.isArray(content.experience) ? content.experience.map((e: any, i: number) => ({
-            id: `legacy-exp-${i}`,
+            id: e.id || `legacy-exp-${i}`,
             role: e.role || '',
             company: e.company || '',
             duration: e.duration || '',
-            bullets: [e.description || '']
+            location: e.location,
+            bullets: Array.isArray(e.bullets) ? e.bullets : [e.description || '']
         })) : [],
+
         education: Array.isArray(content.education) ? content.education.map((e: any, i: number) => ({
-            id: `legacy-edu-${i}`,
+            id: e.id || `legacy-edu-${i}`,
             degree: e.degree || '',
             school: e.school || '',
             year: e.year || ''
         })) : [],
-        projects: []
+
+        projects: Array.isArray(content.projects) ? content.projects.map((p: any, i: number) => ({
+            id: p.id || `legacy-proj-${i}`,
+            name: p.name || '',
+            bullets: Array.isArray(p.bullets) ? p.bullets : [p.description || '']
+        })) : []
     }
 }
 

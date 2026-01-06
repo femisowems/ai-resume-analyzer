@@ -7,7 +7,8 @@ import {
     JobAsset,
     JobDocument,
     DocumentType,
-    DocumentStatus
+    DocumentStatus,
+    ContextAction
 } from '@/lib/types'
 import {
     analyzeResumeDependencies,
@@ -81,19 +82,59 @@ export async function fetchApplicationAssets(
         (new Date().getTime() - new Date(job.created_at).getTime()) / (1000 * 3600 * 24)
     )
 
-    // Get AI-recommended next actions
-    const next_actions = await selectNextActions({
-        job_stage: job.status,
-        days_in_stage: daysInStage,
-        required_documents,
-        optional_documents
-    })
+    // Get AI-recommended next actions (Moved to client-side fetch for performance)
+    const next_actions: ContextAction[] = []
 
     return {
         resume_used: jobAsset as JobAsset | null,
         required_documents,
         optional_documents,
         next_actions
+    }
+}
+
+// ------------------------------------------------------------------
+// 1.5 Fetch Suggested Actions (Lazy Load)
+// ------------------------------------------------------------------
+
+export async function fetchSuggestedActions(jobId: string): Promise<ContextAction[]> {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return []
+
+    // Fetch job status and documents again (securely)
+    const { data: job } = await supabase
+        .from('job_applications')
+        .select('status, created_at')
+        .eq('id', jobId)
+        .single()
+
+    if (!job) return []
+
+    const { data: jobDocuments } = await supabase
+        .from('job_documents')
+        .select('*, document:documents(*)')
+        .eq('job_id', jobId)
+
+    const documents = jobDocuments || []
+    const required_documents = documents.filter(d => d.priority === 'required')
+    const optional_documents = documents.filter(d => d.priority === 'optional')
+
+    const daysInStage = Math.floor(
+        (new Date().getTime() - new Date(job.created_at).getTime()) / (1000 * 3600 * 24)
+    )
+
+    try {
+        return await selectNextActions({
+            job_stage: job.status,
+            days_in_stage: daysInStage,
+            required_documents,
+            optional_documents
+        })
+    } catch (error) {
+        console.error('Failed to fetch suggested actions:', error)
+        return []
     }
 }
 

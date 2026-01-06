@@ -1,12 +1,15 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { DocumentStatus, DocumentType, JobStatus, ContextAction, JobDocument } from "@/lib/types";
 
-if (!process.env.GEMINI_API_KEY) {
-    throw new Error("Missing GEMINI_API_KEY environment variable");
+// Lazy initialization of Gemini client
+function getModel() {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+        throw new Error("Missing GEMINI_API_KEY environment variable");
+    }
+    const genAI = new GoogleGenerativeAI(apiKey);
+    return genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
 }
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
 
 // ------------------------------------------------------------------
 // 1. Document Status Evaluation
@@ -64,7 +67,7 @@ Output JSON:
 `;
 
     try {
-        const result = await model.generateContent(prompt);
+        const result = await getModel().generateContent(prompt);
         const text = result.response.text();
         const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
         const data = JSON.parse(cleanJson);
@@ -144,7 +147,7 @@ Output JSON:
 `;
 
     try {
-        const result = await model.generateContent(prompt);
+        const result = await getModel().generateContent(prompt);
         const text = result.response.text();
         const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
         const data = JSON.parse(cleanJson);
@@ -216,7 +219,7 @@ Output JSON:
 `;
 
     try {
-        const result = await model.generateContent(prompt);
+        const result = await getModel().generateContent(prompt);
         const text = result.response.text();
         const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
         const data = JSON.parse(cleanJson);
@@ -322,7 +325,7 @@ Output: Plain text content only. No JSON wrapper. No markdown formatting.
 `;
 
     try {
-        const result = await model.generateContent(prompt);
+        const result = await getModel().generateContent(prompt);
         const text = result.response.text();
         return text.trim();
     } catch (error) {
@@ -373,7 +376,7 @@ Output JSON (array of evaluations):
 `;
 
     try {
-        const result = await model.generateContent(prompt);
+        const result = await getModel().generateContent(prompt);
         const text = result.response.text();
         const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
         const data = JSON.parse(cleanJson);

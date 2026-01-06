@@ -6,7 +6,7 @@ import { Plus, SlidersHorizontal, X } from 'lucide-react'
 import ResumeStatsCard from './components/ResumeStatsCard'
 import BestResumeHighlight from './components/BestResumeHighlight'
 import { compareResumesAction, analyzeResumeAction } from './actions'
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 
 export interface ResumeWithStats {
     id: string
@@ -125,12 +125,13 @@ export default function ResumesClient({ resumes, bestResume }: ResumesClientProp
                     )}
 
                     {!isCompareMode && (
-                        <Button asChild>
-                            <Link href="/dashboard/resumes/new">
-                                <Plus className="mr-2 h-4 w-4" />
-                                Upload New
-                            </Link>
-                        </Button>
+                        <Link
+                            href="/dashboard/resumes/new"
+                            className={buttonVariants({ variant: 'default' })}
+                        >
+                            <Plus className="mr-2 h-4 w-4" />
+                            Upload New
+                        </Link>
                     )}
                 </div>
             </div>

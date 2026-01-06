@@ -28,7 +28,7 @@ function mockGeminiResponse(text: string) {
   };
 }
 
-const model = genAI ? genAI.getGenerativeModel({ model: "gemini-pro" }) : null;
+const model = genAI ? genAI.getGenerativeModel({ model: "gemini-2.5-flash" }) : null;
 
 async function generateWithRetry(prompt: string, retries = 3): Promise<any> {
   // 1. Try Gemini first (if configured)

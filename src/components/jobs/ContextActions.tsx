@@ -6,9 +6,28 @@ import { Sparkles, ArrowRight } from 'lucide-react'
 interface ContextActionsProps {
     actions: ContextAction[]
     onActionClick: (action: ContextAction) => void
+    isLoading?: boolean
 }
 
-export function ContextActions({ actions, onActionClick }: ContextActionsProps) {
+export function ContextActions({ actions, onActionClick, isLoading }: ContextActionsProps) {
+    if (isLoading) {
+        return (
+            <div className="sticky bottom-0 bg-white/80 backdrop-blur-md rounded-xl p-6 shadow-lg border border-gray-100 animate-pulse">
+                <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-gray-200 rounded-lg" />
+                    <div className="flex-1 space-y-3">
+                        <div className="h-6 bg-gray-200 rounded w-1/3" />
+                        <div className="h-4 bg-gray-200 rounded w-2/3" />
+                        <div className="flex gap-3 mt-2">
+                            <div className="h-12 bg-gray-200 rounded w-32" />
+                            <div className="h-12 bg-gray-200 rounded w-32" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
     if (actions.length === 0) {
         return null
     }
