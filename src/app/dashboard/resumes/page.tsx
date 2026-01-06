@@ -23,6 +23,8 @@ export default async function ResumesPage() {
         title: r.title,
         created_at: r.created_at,
         current_version_number: r.current_version_number,
+        analysisStatus: r.analysis_status || 'pending',
+        analysisError: r.analysis_error,
         stats: {
             applicationsCount: Number(r.applications_count),
             interviewCount: Number(r.interview_count),

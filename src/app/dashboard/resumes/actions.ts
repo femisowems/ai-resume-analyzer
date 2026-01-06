@@ -42,6 +42,7 @@ export async function uploadResume(formData: FormData) {
         parsedText = await parseResumeFile(file)
     } catch (e) {
         console.error('Parse Error:', e)
+        // We continue, allowing analysis to fail later if text is missing
     }
 
     // 4. AI Analysis (Skipped for async processing)
@@ -81,7 +82,9 @@ export async function uploadResume(formData: FormData) {
             resume_id: resume.id,
             version_number: 1,
             content: initialContent,
-            analysis_result: aiResult
+            analysis_result: aiResult,
+            status: 'pending', // Explicitly set pending
+            analysis_error: null
         })
         .select()
         .single()
@@ -254,15 +257,24 @@ export async function analyzeResumeAction(resumeId: string) {
     const currentVersion = Array.isArray(resume.current_version) ? resume.current_version[0] : resume.current_version
     if (!currentVersion) throw new Error('No content to analyze')
 
-    const content = currentVersion.content as any
-    // Prefer raw_text if available, otherwise try to reconstruct or use summary
-    const textToAnalyze = content.raw_text || JSON.stringify(content)
+    // MARK: Set Processing Status
+    await supabase
+        .from('resume_versions')
+        .update({ status: 'processing', analysis_error: null })
+        .eq('id', currentVersion.id)
 
-    if (!textToAnalyze || textToAnalyze.length < 50) {
-        throw new Error('Not enough text to analyze')
-    }
+    // We revalidate here so if the user refreshes they see "processing"
+    // revalidatePath('/dashboard/resumes')
 
     try {
+        const content = currentVersion.content as any
+        // Prefer raw_text if available, otherwise try to reconstruct or use summary
+        const textToAnalyze = content.raw_text || JSON.stringify(content)
+
+        if (!textToAnalyze || textToAnalyze.length < 50) {
+            throw new Error('There is not enough text in this resume to analyze. Please check if the file is valid or unencrypted.')
+        }
+
         // 2. Call Gemini
         const aiResult = await analyzeResumeWithGemini(textToAnalyze)
 
@@ -283,7 +295,9 @@ export async function analyzeResumeAction(resumeId: string) {
             .from('resume_versions')
             .update({
                 analysis_result: aiResult,
-                content: updatedContent
+                content: updatedContent,
+                status: 'completed',
+                analysis_error: null
             })
             .eq('id', currentVersion.id)
 
@@ -293,8 +307,20 @@ export async function analyzeResumeAction(resumeId: string) {
         revalidatePath(`/dashboard/resumes/${resumeId}`)
 
         return { success: true }
-    } catch (e) {
+    } catch (e: any) {
         console.error("Gemini Analysis Failed", e)
-        throw new Error("Analysis failed")
+
+        // MARK: Set Failed Status
+        await supabase
+            .from('resume_versions')
+            .update({
+                status: 'failed',
+                analysis_error: e.message || "Unknown error during analysis"
+            })
+            .eq('id', currentVersion.id)
+
+        revalidatePath('/dashboard/resumes')
+        // Throw specific error message for the UI Toast/Alert
+        throw new Error(e.message || "Analysis failed")
     }
 }

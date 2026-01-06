@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Calendar, Briefcase, FileText, CheckCircle, Copy } from 'lucide-react'
+import { ArrowLeft, Calendar, Briefcase, FileText, CheckCircle, Copy, Download } from 'lucide-react'
 import { getDocument } from '../actions'
 import { Metadata } from 'next'
 import { DocumentDetailActions } from '../components/DocumentDetailActions'
@@ -21,7 +21,13 @@ export default async function DocumentViewPage({ params }: PageProps) {
         notFound()
     }
 
-    const isPdf = document.type === 'resume'
+    const isResume = document.type === 'resume'
+    const mimeType = document.mimeType || (isResume ? 'application/pdf' : undefined)
+
+    const isPdf = isResume && (mimeType === 'application/pdf')
+    const isDocx = isResume && (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+    const isLegacyDoc = isResume && (mimeType === 'application/msword')
+
     const company = document.companyName
     const jobTitle = document.jobTitle
     // If we have links, use the first one for the "Applied to" badge context
@@ -84,9 +90,9 @@ export default async function DocumentViewPage({ params }: PageProps) {
                 <div className="bg-gray-50 border-b border-gray-200 px-6 py-3 flex justify-between items-center">
                     <div className="flex items-center gap-2 text-sm text-gray-600 font-medium">
                         <FileText className="h-4 w-4" />
-                        {isPdf ? 'PDF Preview' : 'Document Content'}
+                        {isPdf ? 'PDF Preview' : isDocx ? 'Document Preview' : 'Document Content'}
                     </div>
-                    {!isPdf && (
+                    {!isResume && (
                         <div className="text-xs text-gray-400">
                             {textContent.length} characters
                         </div>
@@ -113,6 +119,55 @@ export default async function DocumentViewPage({ params }: PageProps) {
                                 </p>
                             </div>
                         )
+                    ) : isDocx ? (
+                        document.previewHtml ? (
+                            <div className="w-full max-w-3xl bg-white rounded-lg shadow-sm border border-gray-200 p-12 md:p-16 min-h-[800px]">
+                                <div
+                                    className="prose prose-slate max-w-none font-sans whitespace-pre-wrap leading-relaxed [&_p]:mb-4 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5"
+                                    dangerouslySetInnerHTML={{ __html: document.previewHtml }}
+                                />
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center p-12 text-center h-full w-full bg-white rounded-lg border border-dashed border-gray-300">
+                                <div className="bg-blue-50 p-4 rounded-full mb-4">
+                                    <FileText className="h-10 w-10 text-blue-400" />
+                                </div>
+                                <h3 className="text-lg font-medium text-gray-900">Preview Unavailable</h3>
+                                <p className="text-gray-500 max-w-sm mt-2 mb-6">
+                                    We couldn't generate a preview for this Word document.
+                                </p>
+                                {document.downloadUrl && (
+                                    <a
+                                        href={document.downloadUrl}
+                                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                                        target="_blank" rel="noopener noreferrer"
+                                    >
+                                        <Download className="h-4 w-4" />
+                                        Download to View
+                                    </a>
+                                )}
+                            </div>
+                        )
+                    ) : isLegacyDoc ? (
+                        <div className="flex flex-col items-center justify-center p-12 text-center h-full w-full bg-white rounded-lg border border-dashed border-gray-300">
+                            <div className="bg-amber-50 p-4 rounded-full mb-4">
+                                <FileText className="h-10 w-10 text-amber-400" />
+                            </div>
+                            <h3 className="text-lg font-medium text-gray-900">Preview Not Supported</h3>
+                            <p className="text-gray-500 max-w-sm mt-2 mb-6">
+                                Legacy Word documents (.doc) cannot be previewed in the browser.
+                            </p>
+                            {document.downloadUrl && (
+                                <a
+                                    href={document.downloadUrl}
+                                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                                    target="_blank" rel="noopener noreferrer"
+                                >
+                                    <Download className="h-4 w-4" />
+                                    Download File
+                                </a>
+                            )}
+                        </div>
                     ) : (
                         <div className="w-full max-w-3xl bg-white rounded-lg shadow-sm border border-gray-200 p-12 md:p-16 min-h-[800px]">
                             {/* Text Document Content */}

@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import mammoth from 'mammoth'
 // import { generateCoverLetter, generateThankYouEmail, optimizeLinkedIn } from '@/lib/openai'
 import { DocumentAnalysis, JobStatus } from '@/lib/types'
 
@@ -14,6 +15,8 @@ export type DocumentItem = {
     content?: string
     createdAt: string
     downloadUrl?: string
+    previewHtml?: string
+    mimeType?: string
 
     // Intelligence & Status
     status: 'draft' | 'active' | 'archived' | 'template'
@@ -382,6 +385,7 @@ export async function getDocument(id: string): Promise<DocumentItem | null> {
     if (resume) {
         let downloadUrl = undefined
         let content = undefined
+        let previewHtml = undefined
         const currentVer = resume.resume_versions?.find((v: any) => v.id === resume.current_version_id)
 
         if (currentVer) {
@@ -393,6 +397,32 @@ export async function getDocument(id: string): Promise<DocumentItem | null> {
                 .from('resumes')
                 .createSignedUrl(resume.raw_file_path, 3600)
             downloadUrl = data?.signedUrl
+
+            if (resume.raw_file_path.toLowerCase().endsWith('.docx')) {
+                try {
+                    const { data: fileBlob } = await supabase.storage
+                        .from('resumes')
+                        .download(resume.raw_file_path)
+
+                    if (fileBlob) {
+                        const arrayBuffer = await fileBlob.arrayBuffer()
+                        const buffer = Buffer.from(arrayBuffer)
+                        const result = await mammoth.convertToHtml({ buffer })
+                        previewHtml = result.value
+                    }
+                } catch (err) {
+                    console.error('Error generating DOCX preview:', err)
+                }
+            }
+        }
+
+        let mimeType = 'application/pdf'
+        if (resume.raw_file_path) {
+            if (resume.raw_file_path.toLowerCase().endsWith('.docx')) {
+                mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            } else if (resume.raw_file_path.toLowerCase().endsWith('.doc')) {
+                mimeType = 'application/msword'
+            }
         }
 
         const allLinks: any[] = []
@@ -417,6 +447,8 @@ export async function getDocument(id: string): Promise<DocumentItem | null> {
             content: content,
             createdAt: resume.created_at,
             downloadUrl,
+            previewHtml,
+            mimeType,
             status: uniqueLinks.length > 0 ? 'active' : 'draft',
             links: uniqueLinks as any,
             reuseCount: uniqueLinks.length

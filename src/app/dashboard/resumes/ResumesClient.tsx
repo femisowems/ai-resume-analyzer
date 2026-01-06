@@ -13,6 +13,8 @@ export interface ResumeWithStats {
     title: string
     created_at: string
     current_version_number: number
+    analysisStatus?: 'pending' | 'processing' | 'completed' | 'failed'
+    analysisError?: string | null
     stats: {
         applicationsCount: number
         interviewCount: number
@@ -39,9 +41,9 @@ export default function ResumesClient({ resumes, bestResume }: ResumesClientProp
         setError(null)
         try {
             await analyzeResumeAction(resumeId)
-        } catch (e) {
+        } catch (e: any) {
             console.error(e)
-            setError("Analysis failed. Please ensure the resume file is valid.")
+            setError(e.message || "Analysis failed. Please ensure the resume file is valid.")
         } finally {
             setAnalyzingIds(prev => {
                 const next = new Set(prev)
@@ -322,6 +324,8 @@ export default function ResumesClient({ resumes, bestResume }: ResumesClientProp
                                     interviewCount: resume.stats.interviewCount,
                                     topStrengths: resume.stats.topStrengths
                                 }}
+                                analysisStatus={resume.analysisStatus}
+                                analysisError={resume.analysisError}
                                 onAnalyze={() => handleAnalyze(resume.id)}
                                 isAnalyzing={analyzingIds.has(resume.id)}
                             />
