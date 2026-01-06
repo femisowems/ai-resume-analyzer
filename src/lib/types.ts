@@ -89,13 +89,18 @@ export interface CustomSection {
 
 // The AI Analysis Result (Score + Suggestions)
 export interface AnalysisResult {
-    overall_score: number
-    sub_scores: {
-        ats_compatibility: number
-        impact_metrics: number
+    total: number
+    breakdown: {
+        ats: number
+        impact: number
+        keywords: number
         clarity: number
-        keyword_match: number
-        seniority_fit: number
+    }
+    explanation: {
+        ats: string[]
+        impact: string[]
+        keywords: string[]
+        clarity: string[]
     }
     keywords: {
         present: string[]
@@ -107,7 +112,7 @@ export interface AnalysisResult {
 
 export interface Suggestion {
     id: string
-    type: 'impact' | 'ats' | 'clarity' | 'formatting' | 'tone'
+    type: 'impact' | 'ats' | 'clarity' | 'formatting' | 'tone' | 'general'
     severity: 'high' | 'medium' | 'low'
     section_target: 'summary' | 'experience' | 'projects' | 'education' | 'skills' | 'general'
     description: string

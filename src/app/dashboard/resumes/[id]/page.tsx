@@ -7,29 +7,14 @@ import KeywordCoverage from '@/components/resume-analysis/KeywordCoverage'
 import StructuredResumeViewer from '@/components/resume-analysis/StructuredResumeViewer'
 import { AnalysisResult, StructuredResumeContent } from '@/lib/types'
 import { addSkillToResume } from './actions'
+import { analyzeResumeAction } from '../actions'
+import { Sparkles, Loader2 } from 'lucide-react'
+
+import { safeParseAnalysis } from '@/lib/validations/analysis'
 
 // Helper to provide safe defaults if data is missing or in old format
 function normalizeAnalysis(analysis: any): AnalysisResult {
-    const defaults: AnalysisResult = {
-        overall_score: analysis?.score || 0,
-        sub_scores: analysis?.sub_scores || {
-            ats_compatibility: 0,
-            impact_metrics: 0,
-            clarity: 0,
-            keyword_match: 0,
-            seniority_fit: 0
-        },
-        keywords: analysis?.keywords || { present: [], missing: [], irrelevant: [] },
-        suggestions: analysis?.suggestions || (analysis?.improvements || []).map((imp: string, i: number) => ({
-            id: `legacy-${i}`,
-            type: 'general',
-            severity: 'medium',
-            section_target: 'general',
-            description: imp,
-            proposed_fix: ''
-        }))
-    }
-    return defaults
+    return safeParseAnalysis(analysis)
 }
 
 function normalizeContent(content: any): StructuredResumeContent {
@@ -168,7 +153,7 @@ export default async function ResumeDetailPage({ params, searchParams }: { param
         <div className="bg-gray-50 pb-20">
             <ResumeAnalysisHeader
                 title={resume.title}
-                score={analysis.overall_score}
+                score={analysis.total}
                 lastAnalyzed={currentVersionRaw?.created_at || resume.updated_at}
                 jobs={jobs as any || []}
             />
@@ -200,8 +185,9 @@ export default async function ResumeDetailPage({ params, searchParams }: { param
 
                         {/* 1. Score Breakdown */}
                         <ScoreBreakdown
-                            overallScore={analysis.overall_score}
-                            subScores={analysis.sub_scores}
+                            overallScore={analysis.total}
+                            subScores={analysis.breakdown}
+                            isLoading={false} // Detail page is static server component, pending overlay handles the 'not analyzed' state
                         />
 
                         {/* 2. Action Queue */}
@@ -219,6 +205,30 @@ export default async function ResumeDetailPage({ params, searchParams }: { param
                     </div>
                 </div>
             </div>
+
+            {/* Analysis Pending Overlay / Modal if total is 0 */}
+            {analysis.total === 0 && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/60 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 max-w-sm w-full p-8 text-center">
+                        <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Sparkles className="w-8 h-8 text-indigo-600" />
+                        </div>
+                        <h2 className="text-xl font-bold text-gray-900 mb-2">Analysis Pending</h2>
+                        <p className="text-gray-500 text-sm mb-6">
+                            This resume hasn't been analyzed by AI yet. Get insights on keyword match, impact, and ATS score.
+                        </p>
+                        <form action={analyzeResumeAction.bind(null, resume.id)}>
+                            <button
+                                type="submit"
+                                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-all shadow-md shadow-indigo-100 flex items-center justify-center gap-2 group"
+                            >
+                                <Sparkles className="w-4 h-4 group-hover:animate-pulse" />
+                                Analyze Resume
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

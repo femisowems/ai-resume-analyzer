@@ -272,8 +272,7 @@ export async function analyzeResumeAction(resumeId: string) {
             ...content,
             // If we didn't have structured data, use Gemini's
             summary: aiResult.structured_resume?.summary?.content || content.summary,
-            skills: aiResult.structured_resume?.skills?.content ? aiResult.structured_resume.skills.content.split(',').map((s: string) => s.trim()) : content.skills,
-            // We could map more fields here
+            skills: aiResult.structured_resume?.skills?.content ? { content: aiResult.structured_resume.skills.content } : content.skills,
         }
 
         const { error: updateError } = await supabase

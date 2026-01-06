@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { AnalysisResult, StructuredResumeContent } from "@/lib/types";
+import { AnalysisResultSchema } from "./validations/analysis";
 import OpenAI from "openai";
 
 // Initialize Gemini
@@ -100,27 +101,32 @@ export async function analyzeResumeWithGemini(
 
     Output Schema (JSON):
     {
-      "overall_score": number (0-100),
-      "sub_scores": {
-        "ats_compatibility": number,
-        "impact_metrics": number,
+      "total": number (0-100),
+      "breakdown": {
+        "ats": number,
+        "impact": number,
         "clarity": number,
-        "keyword_match": number,
-        "seniority_fit": number
+        "keywords": number
+      },
+      "explanation": {
+        "ats": [string],
+        "impact": [string],
+        "clarity": [string],
+        "keywords": [string]
       },
       "keywords": {
         "present": ["string"],
-        "missing": ["string"] (important if Job Description is provided, else general typical skills),
+        "missing": ["string"],
         "irrelevant": ["string"]
       },
       "suggestions": [
         {
-          "id": "string (uuid-like)",
+          "id": "string",
           "type": "impact" | "ats" | "clarity" | "formatting" | "tone",
           "severity": "high" | "medium" | "low",
           "section_target": "summary" | "experience" | "projects" | "education" | "skills" | "general",
-          "description": "string (why change this?)",
-          "proposed_fix": "string (concrete example of the fix)"
+          "description": "string",
+          "proposed_fix": "string"
         }
       ],
       "structured_resume": {
@@ -154,10 +160,20 @@ export async function analyzeResumeWithGemini(
 
     // Clean potential markdown fencing
     const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    const parsed = JSON.parse(cleanJson);
 
-    return JSON.parse(cleanJson) as GeminiAnalysisResponse;
+    // Validate with Zod
+    const validatedAnalysis = AnalysisResultSchema.parse(parsed);
+
+    return {
+      ...validatedAnalysis,
+      structured_resume: parsed.structured_resume
+    } as GeminiAnalysisResponse;
   } catch (error) {
     console.error("Gemini Analysis Error:", error);
+    if (error instanceof Error) {
+      throw new Error(`Failed to analyze resume with Gemini: ${error.message}`);
+    }
     throw new Error("Failed to analyze resume with Gemini");
   }
 }

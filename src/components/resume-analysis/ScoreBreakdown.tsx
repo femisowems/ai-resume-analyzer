@@ -31,21 +31,24 @@ function SubScoreBar({ label, value, tooltip }: SubScoreProps) {
 
 interface Props {
     overallScore: number
-    subScores: {
-        ats_compatibility: number
-        impact_metrics: number
+    subScores?: {
+        ats: number
+        impact: number
         clarity: number
-        keyword_match: number
-        seniority_fit: number
+        keywords: number
     }
+    isLoading?: boolean
 }
 
-export default function ScoreBreakdown({ overallScore, subScores }: Props) {
+export default function ScoreBreakdown({ overallScore, subScores, isLoading }: Props) {
     const size = 120
     const strokeWidth = 8
     const radius = (size - strokeWidth) / 2
     const circumference = radius * 2 * Math.PI
     const offset = circumference - (overallScore / 100) * circumference
+
+    // If loading or subScores missing, show skeletons
+    const showSkeleton = isLoading || !subScores;
 
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -89,30 +92,51 @@ export default function ScoreBreakdown({ overallScore, subScores }: Props) {
 
                 {/* Sub Scores */}
                 <div className="flex-1 w-full space-y-4">
-                    <SubScoreBar
-                        label="ATS Compatibility"
-                        value={subScores.ats_compatibility}
-                        tooltip="How well parsers read your file"
-                    />
-                    <SubScoreBar
-                        label="Impact & Metrics"
-                        value={subScores.impact_metrics}
-                        tooltip="Focus on quantified results (%, $)"
-                    />
-                    <div className="grid grid-cols-2 gap-4">
-                        <SubScoreBar
-                            label="Keyword Match"
-                            value={subScores.keyword_match}
-                            tooltip="Alignment with job description"
-                        />
-                        <SubScoreBar
-                            label="Clarity"
-                            value={subScores.clarity}
-                            tooltip="Readability and concise language"
-                        />
-                    </div>
+                    {showSkeleton ? (
+                        <>
+                            {[1, 2, 3, 4].map((i) => (
+                                <div key={i} className="animate-pulse">
+                                    <div className="flex justify-between mb-1">
+                                        <div className="h-3 w-24 bg-gray-200 rounded" />
+                                        <div className="h-3 w-8 bg-gray-200 rounded" />
+                                    </div>
+                                    <div className="h-2 w-full bg-gray-100 rounded-full" />
+                                </div>
+                            ))}
+                        </>
+                    ) : (
+                        <>
+                            <SubScoreBar
+                                label="ATS Compatibility"
+                                value={subScores.ats}
+                                tooltip="How well parsers read your file"
+                            />
+                            <SubScoreBar
+                                label="Impact & Metrics"
+                                value={subScores.impact}
+                                tooltip="Focus on quantified results (%, $)"
+                            />
+                            <div className="grid grid-cols-2 gap-4">
+                                <SubScoreBar
+                                    label="Keyword Match"
+                                    value={subScores.keywords}
+                                    tooltip="Alignment with job description"
+                                />
+                                <SubScoreBar
+                                    label="Clarity"
+                                    value={subScores.clarity}
+                                    tooltip="Readability and concise language"
+                                />
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
+            {!showSkeleton && (!subScores.ats && !subScores.impact && !subScores.keywords && !subScores.clarity) && overallScore > 0 && (
+                <p className="text-[10px] text-amber-600 mt-4 bg-amber-50 p-2 rounded border border-amber-100 italic">
+                    Note: Detailed breakdown not available for this legacy analysis.
+                </p>
+            )}
         </div>
     )
 }
