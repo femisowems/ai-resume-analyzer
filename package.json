@@ -11,7 +11,10 @@
     "start": "next start",
     "lint": "eslint",
     "db:push": "supabase db push",
-    "db:reset": "supabase db reset"
+    "db:reset": "supabase db reset",
+    "test:ai": "npx tsx scripts/test-ai-integration.ts",
+    "test:unit": "npx tsx scripts/test-parser.ts",
+    "test": "npx playwright test"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

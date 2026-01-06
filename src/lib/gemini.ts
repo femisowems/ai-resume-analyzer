@@ -163,7 +163,22 @@ export async function analyzeResumeWithGemini(
     const parsed = JSON.parse(cleanJson);
 
     // Validate with Zod
-    const validatedAnalysis = AnalysisResultSchema.parse(parsed);
+    let validatedAnalysis;
+    try {
+      validatedAnalysis = AnalysisResultSchema.parse(parsed);
+    } catch (e) {
+      // Attempt to fix common enum errors from AI hallucination
+      if (parsed.suggestions && Array.isArray(parsed.suggestions)) {
+        parsed.suggestions = parsed.suggestions.map((s: any) => ({
+          ...s,
+          section_target: ['summary', 'experience', 'projects', 'education', 'skills', 'general'].includes(s.section_target) ? s.section_target : 'general',
+          type: ['impact', 'ats', 'clarity', 'formatting', 'tone', 'general'].includes(s.type) ? s.type : 'general',
+          severity: ['high', 'medium', 'low'].includes(s.severity) ? s.severity : 'medium',
+        }));
+      }
+      // Retry parsing after sanitization
+      validatedAnalysis = AnalysisResultSchema.parse(parsed);
+    }
 
     return {
       ...validatedAnalysis,
