@@ -1,15 +1,5 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { DocumentStatus, DocumentType, JobStatus, ContextAction, JobDocument } from "@/lib/types";
-
-// Lazy initialization of Gemini client
-function getModel() {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-        throw new Error("Missing GEMINI_API_KEY environment variable");
-    }
-    const genAI = new GoogleGenerativeAI(apiKey);
-    return genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
-}
+import { generateWithRetry } from "@/lib/gemini";
 
 // ------------------------------------------------------------------
 // 1. Document Status Evaluation
@@ -67,7 +57,7 @@ Output JSON:
 `;
 
     try {
-        const result = await getModel().generateContent(prompt);
+        const result = await generateWithRetry(prompt, 3, { expectJson: true });
         const text = result.response.text();
         const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
         const data = JSON.parse(cleanJson);
@@ -137,9 +127,9 @@ Output JSON:
 {
   "documents_to_update": [
     {
-      "document_id": "string",
-      "reason": "string (specific change that affects this document)",
-      "severity": "high" | "medium" | "low"
+        "document_id": "string",
+        "reason": "string (specific change that affects this document)",
+        "severity": "high" | "medium" | "low"
     }
   ],
   "summary": "string (1-2 sentences for user notification)"
@@ -147,7 +137,7 @@ Output JSON:
 `;
 
     try {
-        const result = await getModel().generateContent(prompt);
+        const result = await generateWithRetry(prompt, 3, { expectJson: true });
         const text = result.response.text();
         const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
         const data = JSON.parse(cleanJson);
@@ -219,7 +209,7 @@ Output JSON:
 `;
 
     try {
-        const result = await getModel().generateContent(prompt);
+        const result = await generateWithRetry(prompt, 3, { expectJson: true });
         const text = result.response.text();
         const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
         const data = JSON.parse(cleanJson);
@@ -325,8 +315,11 @@ Output: Plain text content only. No JSON wrapper. No markdown formatting.
 `;
 
     try {
-        const result = await getModel().generateContent(prompt);
+        const result = await generateWithRetry(prompt, 3, { expectJson: false });
         const text = result.response.text();
+        if (!text || text === '[image]') {
+            throw new Error("Generated content was empty or invalid image placeholder.");
+        }
         return text.trim();
     } catch (error) {
         console.error("Gemini Document Regeneration Error:", error);
@@ -376,7 +369,7 @@ Output JSON (array of evaluations):
 `;
 
     try {
-        const result = await getModel().generateContent(prompt);
+        const result = await generateWithRetry(prompt, 3, { expectJson: true });
         const text = result.response.text();
         const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
         const data = JSON.parse(cleanJson);
@@ -419,3 +412,4 @@ Output JSON (array of evaluations):
         return evaluationMap;
     }
 }
+

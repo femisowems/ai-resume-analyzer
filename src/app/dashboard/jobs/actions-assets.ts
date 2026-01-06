@@ -267,8 +267,19 @@ export async function regenerateJobDocument(
         throw new Error('Unauthorized')
     }
 
-    // Fetch job document with related data
-    const { data: jobDoc } = await supabase
+    console.log('[Regenerate Debug] Looking for ID:', jobDocumentId)
+
+    // 1. Raw check - does the row exist at all?
+    const { data: rawDoc, error: rawError } = await supabase
+        .from('job_documents')
+        .select('id, job_id, document_id, document_type')
+        .eq('id', jobDocumentId)
+        .maybeSingle()
+
+    console.log('[Regenerate Debug] Raw lookup:', rawDoc ? 'Found' : 'Not Found', rawError || '')
+
+    // Fetch job document with related data (Original logic)
+    let { data: jobDoc } = await supabase
         .from('job_documents')
         .select(`
             *,
@@ -277,24 +288,98 @@ export async function regenerateJobDocument(
                 id,
                 job_title,
                 company_name,
-                description,
+                job_description,
                 current_resume_version_id
             )
         `)
         .eq('id', jobDocumentId)
-        .single()
+        .maybeSingle()
 
-    if (!jobDoc || !jobDoc.job) {
-        throw new Error('Job document not found')
+    if (!jobDoc) {
+        // Fallback: Try fetching by document_id in case the frontend passed the underlying document ID
+        console.log('[Regenerate Debug] jobDoc lookup by ID failed, trying by document_id...')
+        const { data: jobDocByDocId } = await supabase
+            .from('job_documents')
+            .select(`
+                *,
+                document:documents(*),
+                job:job_applications(
+                    id,
+                    job_title,
+                    company_name,
+                    job_description,
+                    current_resume_version_id
+                )
+            `)
+            .eq('document_id', jobDocumentId)
+            .maybeSingle()
+
+        if (jobDocByDocId) {
+            console.log('[Regenerate Debug] Found jobDoc by document_id')
+            jobDoc = jobDocByDocId
+        }
     }
 
-    // Fetch resume content
+    // Initialize data variables with potentially partial data
+    let jobData: any = jobDoc?.job
+    let previousContent: string | undefined = jobDoc?.document?.content
+
+    // Fallback: If joined query failed (jobDoc is null) but we verified the row exists (rawDoc), recover manually
+    if (!jobDoc && rawDoc) {
+        console.log('[Regenerate Debug] Joined query failed, recovering using rawDoc IDs...')
+
+        if (!rawDoc.job_id) {
+            console.error('[Regenerate Debug] rawDoc has no job_id')
+        } else {
+            // 1. Fetch Job manually
+            console.log('[Regenerate Debug] Attempting to fetch Job ID:', rawDoc.job_id)
+            const { data: manualJob, error: manualJobError } = await supabase
+                .from('job_applications')
+                .select('id, job_title, company_name, job_description, current_resume_version_id')
+                .eq('id', rawDoc.job_id)
+                .maybeSingle()
+
+            console.log('[Regenerate Debug] Manual Job Fetch:', manualJob ? 'Success' : 'Failed', manualJobError || '')
+
+            // 2. Fetch Document manually (if exists)
+            if (rawDoc.document_id) {
+                const { data: manualDoc } = await supabase
+                    .from('documents')
+                    .select('content')
+                    .eq('id', rawDoc.document_id)
+                    .maybeSingle()
+                previousContent = manualDoc?.content
+            }
+
+            if (manualJob) {
+                jobData = manualJob
+                // Construct a synthetic jobDoc just enough for type checks if needed
+                jobDoc = {
+                    ...rawDoc,
+                    job: manualJob,
+                    document: { content: previousContent }
+                } as any
+            }
+        }
+    }
+
+    console.log('[Regenerate Debug] ID:', jobDocumentId, 'User:', user.id)
+
+    if (!jobData) {
+        const jobId = rawDoc?.job_id || 'unknown'
+        const errorMsg = `Job not found for this document. Job ID: ${jobId}, User: ${user.id}. RawDoc Found: ${!!rawDoc}`
+        console.error('[Regenerate Debug]', errorMsg)
+        throw new Error(errorMsg)
+    }
+
+    // Fetch resume content using the resolved jobData
     const { data: resumeVersion } = await supabase
         .from('resume_versions')
         .select('content')
-        .eq('id', jobDoc.job.current_resume_version_id)
+        .eq('id', jobData.current_resume_version_id)
         .single()
 
+    // Safety check for resume version
     if (!resumeVersion) {
         throw new Error('Resume version not found')
     }
@@ -305,31 +390,33 @@ export async function regenerateJobDocument(
 
     // Generate new content using AI
     const newContent = await regenerateDocument({
-        document_type: jobDoc.document_type as DocumentType,
-        job_title: jobDoc.job.job_title,
-        company_name: jobDoc.job.company_name,
+        document_type: (jobDoc?.document_type || rawDoc?.document_type) as DocumentType,
+        job_title: jobData.job_title,
+        company_name: jobData.company_name,
         resume_content: resumeContent,
-        job_description: jobDoc.job.description,
-        previous_content: jobDoc.document?.content
+        job_description: jobData.job_description,
+        previous_content: previousContent
     })
 
     // Update document content
-    if (jobDoc.document_id) {
+    const targetDocId = jobDoc?.document_id || rawDoc?.document_id
+    if (targetDocId) {
         await supabase
             .from('documents')
             .update({
                 content: newContent,
                 updated_at: new Date().toISOString()
             })
-            .eq('id', jobDoc.document_id)
+            .eq('id', targetDocId)
     } else {
         // Create new document
         const { data: newDoc } = await supabase
             .from('documents')
             .insert({
+                id: crypto.randomUUID(),
                 user_id: user.id,
-                type: jobDoc.document_type,
-                title: `${jobDoc.document_type.replace('_', ' ')} - ${jobDoc.job.company_name}`,
+                type: (jobDoc?.document_type || rawDoc?.document_type),
+                title: `${(jobDoc?.document_type || rawDoc?.document_type).replace('_', ' ')} - ${jobData.company_name}`,
                 content: newContent,
                 status: 'active'
             })
@@ -345,15 +432,15 @@ export async function regenerateJobDocument(
     }
 
     // Update job document status
-    const oldStatus = jobDoc.status
+    const oldStatus = jobDoc?.status || 'missing'
     await supabase
         .from('job_documents')
         .update({
             status: 'ready' as DocumentStatus,
             status_reason: null,
             last_updated_at: new Date().toISOString(),
-            generated_at: jobDoc.generated_at || new Date().toISOString(),
-            depends_on_resume_version_id: jobDoc.job.current_resume_version_id
+            generated_at: jobDoc?.generated_at || new Date().toISOString(),
+            depends_on_resume_version_id: jobData.current_resume_version_id
         })
         .eq('id', jobDocumentId)
 
@@ -368,7 +455,7 @@ export async function regenerateJobDocument(
             triggered_by: 'user'
         })
 
-    revalidatePath(`/dashboard/jobs/${jobDoc.job.id}`)
+    revalidatePath(`/dashboard/jobs/${jobData.id}`)
 
     return {
         success: true,
@@ -424,13 +511,14 @@ export async function generateJobDocument(
         job_title: job.job_title,
         company_name: job.company_name,
         resume_content: resumeContent,
-        job_description: job.description
+        job_description: job.job_description
     })
 
     // Create document
-    const { data: newDoc } = await supabase
+    const { data: newDoc, error: insertError } = await supabase
         .from('documents')
         .insert({
+            id: crypto.randomUUID(),
             user_id: user.id,
             type: documentType,
             title: `${documentType.replace('_', ' ')} - ${job.company_name}`,
@@ -440,8 +528,13 @@ export async function generateJobDocument(
         .select()
         .single()
 
+    if (insertError) {
+        console.error('Database Insert Error:', insertError)
+    }
+
     if (!newDoc) {
-        throw new Error('Failed to create document')
+        console.error('Failed to create new document, data is null. Insert error:', insertError)
+        throw new Error(`Failed to create document: ${insertError?.message || 'Unknown DB error'}`)
     }
 
     // Check if job_document entry exists

@@ -28,9 +28,14 @@ function mockGeminiResponse(text: string) {
   };
 }
 
-const model = genAI ? genAI.getGenerativeModel({ model: "gemini-2.5-flash" }) : null;
+export const GEMINI_MODEL_NAME = "gemini-2.5-flash";
+const model = genAI ? genAI.getGenerativeModel({ model: GEMINI_MODEL_NAME }) : null;
 
-async function generateWithRetry(prompt: string, retries = 3): Promise<any> {
+export interface GenerateOptions {
+  expectJson?: boolean;
+}
+
+export async function generateWithRetry(prompt: string, retries = 3, options: GenerateOptions = {}): Promise<any> {
   // 1. Try Gemini first (if configured)
   if (model) {
     for (let i = 0; i < retries; i++) {
@@ -39,6 +44,15 @@ async function generateWithRetry(prompt: string, retries = 3): Promise<any> {
         return result;
       } catch (error: any) {
         console.warn(`Gemini attempt ${i + 1} failed:`, error.message);
+
+        // FAIL FAST CHECK
+        // If the error is a 404 (Model Not Found) or 400 (Bad Request), unlikely to be transient.
+        // Stop retrying Gemini immediately.
+        if (error.message.includes("404") || error.message.includes("400") || error.message.includes("not found")) {
+          console.error("Gemini Fatal Error (Non-Retryable):", error.message);
+          break; // Break the retry loop, fall through to OpenAI
+        }
+
         if (i === retries - 1) {
           // Start Fallback flow below
           console.log("All Gemini retries failed. Attempting OpenAI fallback...");
@@ -53,11 +67,16 @@ async function generateWithRetry(prompt: string, retries = 3): Promise<any> {
   if (openai) {
     try {
       console.log("Using OpenAI Fallback for generation...");
-      const completion = await openai.chat.completions.create({
+      const config: any = {
         messages: [{ role: "user", content: prompt }],
         model: "gpt-4o", // Strongest model for complex JSON tasks
-        response_format: { type: "json_object" }, // Enforce JSON since our prompts expect it
-      });
+      };
+
+      if (options.expectJson) {
+        config.response_format = { type: "json_object" };
+      }
+
+      const completion = await openai.chat.completions.create(config);
 
       const content = completion.choices[0].message.content || "";
       return mockGeminiResponse(content);
@@ -154,7 +173,7 @@ export async function analyzeResumeWithGemini(
   `;
 
   try {
-    const result = await generateWithRetry(prompt);
+    const result = await generateWithRetry(prompt, 3, { expectJson: true });
     const response = await result.response;
     const text = response.text();
 
@@ -212,7 +231,7 @@ export async function suggestImprovement(
     }
   `;
 
-  const result = await generateWithRetry(prompt);
+  const result = await generateWithRetry(prompt, 3, { expectJson: true });
   const text = result.response.text();
   const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
   const data = JSON.parse(cleanJson);
@@ -251,7 +270,7 @@ export async function analyzeDocumentHealth(
   `;
 
   try {
-    const result = await generateWithRetry(prompt);
+    const result = await generateWithRetry(prompt, 3, { expectJson: true });
     const response = await result.response;
     const text = response.text();
     const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -350,7 +369,7 @@ export async function compareResumesWithGemini(
   `;
 
   try {
-    const result = await generateWithRetry(prompt);
+    const result = await generateWithRetry(prompt, 3, { expectJson: true });
     const response = await result.response;
     const text = response.text();
 
@@ -405,7 +424,7 @@ export async function matchResumeToJobWithGemini(resumeText: string, jobDescript
   `;
 
   try {
-    const result = await generateWithRetry(prompt);
+    const result = await generateWithRetry(prompt, 3, { expectJson: true });
     const response = await result.response;
     const cleanJson = response.text().replace(/```json/g, '').replace(/```/g, '').trim();
     return JSON.parse(cleanJson);
@@ -445,7 +464,7 @@ export async function generateInterviewQuestionsWithGemini(resumeText: string, j
   `;
 
   try {
-    const result = await generateWithRetry(prompt);
+    const result = await generateWithRetry(prompt, 3, { expectJson: true });
     const response = await result.response;
     const cleanJson = response.text().replace(/```json/g, '').replace(/```/g, '').trim();
     const data = JSON.parse(cleanJson);
@@ -478,12 +497,13 @@ export async function generateCoverLetterWithGemini(
       [Company Address (if unknown use 'Headquarters')]
 
     - **Body Content**:
-      - Highlights relevant experience from the resume, specifically mentioning METRICS and ACHIEVEMENTS (e.g. "Increased revenue by 20%")
-      - Shows enthusiasm for the specific role and company
-      - Demonstrates understanding of the job requirements
-      - Uses a professional yet warm tone
-      - Is 3-4 paragraphs long
-      - Avoids generic phrases
+      - **CRITICAL**: You MUST reference specific details from the "Job Context" (e.g., specific skills required, company mission, or project responsibilities) to prove the letter is tailored.
+      - Align the candidate's experience (from Resume) with the specific requirements found in the Job Description.
+      - Highlights relevant experience, specifically mentioning METRICS and ACHIEVEMENTS (e.g. "Increased revenue by 20%").
+      - Shows genuine enthusiasm for the specific role and company.
+      - Uses a professional yet warm tone.
+      - Is 3-4 paragraphs long.
+      - Avoids generic phrases.
       ${additionalContext ? `- **IMPORTANT NOTE**: The candidate has provided specific notes/context for this application. You MUST incorporate the following instructions/details into the letter: "${additionalContext}"` : ''}
 
     Output straight text (Markdown is okay).
@@ -496,12 +516,19 @@ export async function generateCoverLetterWithGemini(
     Job Context:
     Role: ${jobTitle}
     Company: ${companyName}
-    Description: ${jobDescription.slice(0, 2000)}
+    Description:
+    """
+    ${jobDescription.slice(0, 8000)}
+    """
   `;
 
   try {
-    const result = await generateWithRetry(prompt);
-    return result.response.text();
+    const result = await generateWithRetry(prompt, 3, { expectJson: false });
+    const text = result.response.text();
+    if (!text || text === '[image]') {
+      throw new Error("Generated content was empty or invalid image placeholder.");
+    }
+    return text;
   } catch (error) {
     console.error("Gemini Cover Letter Error:", error);
     throw new Error("Failed to generate cover letter with Gemini");
@@ -545,8 +572,12 @@ export async function generateThankYouEmailWithGemini(
   `;
 
   try {
-    const result = await generateWithRetry(prompt);
-    return result.response.text();
+    const result = await generateWithRetry(prompt, 3, { expectJson: false });
+    const text = result.response.text();
+    if (!text || text === '[image]') {
+      throw new Error("Generated content was empty or invalid image placeholder.");
+    }
+    return text;
   } catch (error) {
     console.error("Gemini Thank You Email Error:", error);
     throw new Error("Failed to generate thank you email with Gemini");
@@ -577,7 +608,7 @@ export async function optimizeLinkedInWithGemini(
   `;
 
   try {
-    const result = await generateWithRetry(prompt);
+    const result = await generateWithRetry(prompt, 3, { expectJson: true });
     const response = await result.response;
     const cleanJson = response.text().replace(/```json/g, '').replace(/```/g, '').trim();
     return JSON.parse(cleanJson);
@@ -611,7 +642,7 @@ export async function rewriteResumeSectionWithGemini(
   `;
 
   try {
-    const result = await generateWithRetry(prompt);
+    const result = await generateWithRetry(prompt, 3, { expectJson: false });
     return result.response.text();
   } catch (error) {
     console.error("Gemini Rewrite Error:", error);

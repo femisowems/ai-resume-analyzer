@@ -6,7 +6,8 @@ if (!process.env.GEMINI_API_KEY) {
 }
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
+// Use the same standardized flash model for consistency and speed
+const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 // ------------------------------------------------------------------
 // 1. Strategic Briefing (For the Dashboard Header)

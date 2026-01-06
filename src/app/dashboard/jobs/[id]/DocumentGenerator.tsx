@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { FileText, Mail, Linkedin, Loader2, Copy, Check, X } from 'lucide-react'
+import { FileText, Mail, Linkedin, Loader2, Copy, Check, X, AlertTriangle } from 'lucide-react'
 import { generateCoverLetterAction, generateThankYouAction, createDocument } from '../../documents/actions'
 
 interface DocumentGeneratorProps {
@@ -19,12 +19,14 @@ export default function DocumentGenerator({ jobId, jobTitle, companyName, resume
     const [generatedContent, setGeneratedContent] = useState<string>('')
     const [copied, setCopied] = useState(false)
     const [saved, setSaved] = useState(false)
+    const [error, setError] = useState<string | null>(null)
 
     // Thank you email specific fields
     const [interviewerName, setInterviewerName] = useState('')
     const [interviewDate, setInterviewDate] = useState('')
 
     const handleGenerate = () => {
+        setError(null)
         startTransition(async () => {
             try {
                 let content = ''
@@ -35,8 +37,9 @@ export default function DocumentGenerator({ jobId, jobTitle, companyName, resume
                 }
                 setGeneratedContent(content)
                 setSaved(false)
-            } catch (error) {
-                alert('Failed to generate document. Please try again.')
+            } catch (error: any) {
+                console.error("Generation failed:", error)
+                setError(error.message || 'Failed to generate document. Please try again.')
             }
         })
     }
@@ -90,10 +93,12 @@ export default function DocumentGenerator({ jobId, jobTitle, companyName, resume
                     <div className="px-8 pt-6 pb-2">
                         <div className="flex bg-gray-100/80 p-1 rounded-lg">
                             <button
+                                key="cover_letter"
                                 onClick={() => {
                                     setActiveTab('cover_letter')
                                     setGeneratedContent('')
                                     setSaved(false)
+                                    setError(null)
                                 }}
                                 className={`flex-1 flex items-center justify-center px-4 py-2.5 text-sm font-semibold rounded-md transition-all duration-200 ${activeTab === 'cover_letter'
                                     ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-black/5'
@@ -104,10 +109,12 @@ export default function DocumentGenerator({ jobId, jobTitle, companyName, resume
                                 Cover Letter
                             </button>
                             <button
+                                key="thank_you"
                                 onClick={() => {
                                     setActiveTab('thank_you')
                                     setGeneratedContent('')
                                     setSaved(false)
+                                    setError(null)
                                 }}
                                 className={`flex-1 flex items-center justify-center px-4 py-2.5 text-sm font-semibold rounded-md transition-all duration-200 ${activeTab === 'thank_you'
                                     ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-black/5'
@@ -148,6 +155,16 @@ export default function DocumentGenerator({ jobId, jobTitle, companyName, resume
                                                 onChange={(e) => setInterviewDate(e.target.value)}
                                                 className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition shadow-sm text-gray-600"
                                             />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {error && (
+                                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start text-red-700 animate-in fade-in slide-in-from-top-2">
+                                        <AlertTriangle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
+                                        <div className="flex-1">
+                                            <h4 className="font-semibold text-sm">Generation Failed</h4>
+                                            <p className="text-sm mt-1 opacity-90">{error}</p>
                                         </div>
                                     </div>
                                 )}

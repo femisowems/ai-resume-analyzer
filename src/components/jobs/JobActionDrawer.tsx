@@ -89,10 +89,10 @@ export function JobActionDrawer({ job, isOpen, onClose }: JobActionDrawerProps) 
                             size={64}
                             className="rounded-xl shadow-sm bg-muted/50"
                         />
-                        <div className="flex flex-col gap-0.5">
+                        <div className="flex flex-col gap-0">
                             <h2 className="text-xl font-bold text-foreground leading-none">{job.role}</h2>
-                            <p className="text-muted-foreground font-medium leading-tight">{job.company_name}</p>
-                            <div className="flex items-center gap-2 mt-2">
+                            <p className="text-muted-foreground font-medium leading-none mt-2">{job.company_name}</p>
+                            <div className="flex items-center gap-2 mt-3">
                                 <Link
                                     href={`/dashboard/jobs/${job.id}`}
                                     className="flex items-center gap-1 text-xs font-semibold px-2 py-1 bg-primary text-primary-foreground rounded-md border border-primary hover:bg-primary/90 transition-colors shadow-sm"
