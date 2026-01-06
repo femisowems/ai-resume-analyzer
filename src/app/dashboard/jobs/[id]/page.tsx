@@ -7,6 +7,9 @@ import { JobTimeline } from '@/components/jobs/JobTimeline'
 import { ApplicationAssets } from '@/components/jobs/ApplicationAssets'
 import { ArrowRight, Sparkles, AlertCircle } from 'lucide-react'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function JobOverviewPage({ params }: { params: Promise<{ id: string }> }) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()

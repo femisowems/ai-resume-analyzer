@@ -69,12 +69,14 @@ export async function createDocument(
         .from('documents')
         .insert({
             id: docId,
+
             user_id: user.id,
             // job_application_id is deprecated in favor of links, but we can keep it null or migrated
             type,
             content,
             title: `${type === 'cover_letter' ? 'Cover Letter' : type === 'thank_you' ? 'Thank You Email' : 'LinkedIn Post'} - ${new Date().toLocaleDateString()}`,
             status: jobId ? 'active' : 'draft',
+            created_at: new Date().toISOString(),
             last_used_at: new Date().toISOString(),
             reuse_count: jobId ? 1 : 0
         })
@@ -252,7 +254,7 @@ export async function getDocuments(jobId?: string): Promise<DocumentItem[]> {
             type: doc.type,
             content: doc.content,
             title: doc.type === 'cover_letter' ? 'Cover Letter' : 'Document',
-            createdAt: doc.created_at,
+            createdAt: doc.created_at || doc.last_used_at || new Date().toISOString(),
             status: doc.status || 'draft',
             aiAnalysis: doc.ai_analysis,
             lastUsedAt: doc.last_used_at,
@@ -343,6 +345,11 @@ export async function getDocument(id: string): Promise<DocumentItem | null> {
         .single()
 
     if (doc) {
+        console.log(`[EVIDENCE] DB Fetched Substring (getDocument ID: ${id}):`, doc.content?.substring(0, 120))
+    }
+
+
+    if (doc) {
         const links = doc.document_job_links?.map((link: any) => ({
             jobId: link.job_application.id,
             companyName: link.job_application.company_name,
@@ -355,7 +362,7 @@ export async function getDocument(id: string): Promise<DocumentItem | null> {
             type: doc.type,
             content: doc.content,
             title: doc.title || (doc.type === 'cover_letter' ? 'Cover Letter' : 'Document'),
-            createdAt: doc.created_at,
+            createdAt: doc.created_at || doc.last_used_at || new Date().toISOString(),
             status: doc.status || 'draft',
             aiAnalysis: doc.ai_analysis,
             lastUsedAt: doc.last_used_at,
@@ -377,7 +384,7 @@ export async function getDocument(id: string): Promise<DocumentItem | null> {
                     id, company_name, job_title, status
                 )
             )
-        `)
+                `)
         .eq('id', id)
         .eq('user_id', user.id)
         .single()

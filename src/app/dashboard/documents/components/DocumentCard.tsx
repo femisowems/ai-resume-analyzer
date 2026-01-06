@@ -83,7 +83,7 @@ export function DocumentCard({ doc, onView, onDelete, onLink }: DocumentCardProp
                                 <span className="text-muted-foreground">Draft</span>
                             )}
                             <span className="text-muted-foreground/50">•</span>
-                            {new Date(doc.createdAt).toLocaleDateString()}
+                            {doc.createdAt ? new Date(doc.createdAt).toLocaleDateString() : ''}
                         </p>
                     </div>
                 </div>

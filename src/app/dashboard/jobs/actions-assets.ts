@@ -1,7 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, unstable_noStore as noStore } from 'next/cache'
 import {
     ApplicationAssetsData,
     JobAsset,
@@ -24,6 +24,7 @@ import {
 export async function fetchApplicationAssets(
     jobId: string
 ): Promise<ApplicationAssetsData> {
+    noStore()
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -388,6 +389,8 @@ export async function regenerateJobDocument(
     const resumeContent = resumeVersion.content?.raw_text ||
         JSON.stringify(resumeVersion.content)
 
+
+
     // Generate new content using AI
     const newContent = await regenerateDocument({
         document_type: (jobDoc?.document_type || rawDoc?.document_type) as DocumentType,
@@ -397,6 +400,8 @@ export async function regenerateJobDocument(
         job_description: jobData.job_description,
         previous_content: previousContent
     })
+
+    console.log('[EVIDENCE] Gemini Output Substring:', newContent.substring(0, 120))
 
     // Update document content
     const targetDocId = jobDoc?.document_id || rawDoc?.document_id
@@ -408,6 +413,10 @@ export async function regenerateJobDocument(
                 updated_at: new Date().toISOString()
             })
             .eq('id', targetDocId)
+
+        // EVIDENCE: Re-select from DB
+        const { data: verifyRow } = await supabase.from('documents').select('content').eq('id', targetDocId).single()
+        console.log('[EVIDENCE] DB Saved Substring (after update):', verifyRow?.content?.substring(0, 120))
     } else {
         // Create new document
         const { data: newDoc } = await supabase
@@ -418,12 +427,14 @@ export async function regenerateJobDocument(
                 type: (jobDoc?.document_type || rawDoc?.document_type),
                 title: `${(jobDoc?.document_type || rawDoc?.document_type).replace('_', ' ')} - ${jobData.company_name}`,
                 content: newContent,
-                status: 'active'
+                status: 'active',
+                created_at: new Date().toISOString()
             })
             .select()
             .single()
 
         if (newDoc) {
+            console.log('[EVIDENCE] DB Saved Substring (new row):', newDoc.content?.substring(0, 120))
             await supabase
                 .from('job_documents')
                 .update({ document_id: newDoc.id })
@@ -456,6 +467,11 @@ export async function regenerateJobDocument(
         })
 
     revalidatePath(`/dashboard/jobs/${jobData.id}`)
+    if (targetDocId) {
+        revalidatePath(`/dashboard/documents/${targetDocId}`)
+    }
+    revalidatePath('/dashboard/documents')
+
 
     return {
         success: true,

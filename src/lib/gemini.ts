@@ -33,6 +33,8 @@ const model = genAI ? genAI.getGenerativeModel({ model: GEMINI_MODEL_NAME }) : n
 
 export interface GenerateOptions {
   expectJson?: boolean;
+  temperature?: number;
+  topP?: number;
 }
 
 export async function generateWithRetry(prompt: string, retries = 3, options: GenerateOptions = {}): Promise<any> {
@@ -40,7 +42,14 @@ export async function generateWithRetry(prompt: string, retries = 3, options: Ge
   if (model) {
     for (let i = 0; i < retries; i++) {
       try {
-        const result = await model.generateContent(prompt);
+        const generationConfig = {
+          temperature: options.temperature,
+          topP: options.topP
+        };
+        const result = await model.generateContent({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig
+        });
         return result;
       } catch (error: any) {
         console.warn(`Gemini attempt ${i + 1} failed:`, error.message);
@@ -483,14 +492,15 @@ export async function generateCoverLetterWithGemini(
   currentDateStr: string = new Date().toLocaleDateString(),
   additionalContext?: string
 ): Promise<string> {
+  const formattedDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   const prompt = `
     You are a professional career coach helping write compelling cover letters. 
     Generate a personalized, professional cover letter that:
-    - **STRICTLY FOLLOW THIS HEADER FORMAT** (REPLACE bracketed text with actual data extracted from Resume. Do NOT output the brackets):
+    - **STRICTLY FOLLOW THIS HEADER FORMAT** (Replace placeholders with actual data extracted from Resume. If missing, omit line or use generic term. NEVER leave brackets in output):
       [Candidate Name from Resume]
       [Candidate Email from Resume]
       [Candidate Phone from Resume]
-      ${currentDateStr}
+      ${formattedDate}
 
       [Hiring Manager Name (if unknown use 'Hiring Manager')]
       ${companyName}

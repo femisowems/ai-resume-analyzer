@@ -296,17 +296,19 @@ ${params.job_description.slice(0, 10000)}
 ` : ''}
 
 ${params.previous_content ? `
-Previous Version (for reference):
+Previous Version (Reference ONLY):
 """
 ${params.previous_content.slice(0, 5000)}
 """
+**IMPORTANT**: The user wants a **FRESH, DIFFERENT** version. Do not just reproduce the Previous Version. Vary the sentence structure, focus points, and opening hook.
 ` : ''}
 
 CRITICAL CONSTRAINTS:
 1. DO NOT hallucinate experience. Only use facts from the resume.
 2. DO NOT invent projects, skills, or accomplishments.
 3. Tone: Professional, confident, personalized.
-4. Length: 
+4. TAILORING: You MUST reference specific requirements from the Job Description (if provided) and explain how the candidate meets them. Generic letters are unacceptable.
+5. Length: 
    - Cover letter: 3-4 paragraphs, ~300 words
    - Thank you email: 2-3 paragraphs, ~150 words
    - Follow-up email: 2 paragraphs, ~100 words
@@ -315,7 +317,8 @@ Output: Plain text content only. No JSON wrapper. No markdown formatting.
 `;
 
     try {
-        const result = await generateWithRetry(prompt, 3, { expectJson: false });
+        // Use higher temperature (0.8) for creativity/variation
+        const result = await generateWithRetry(prompt, 3, { expectJson: false, temperature: 0.8 });
         const text = result.response.text();
         if (!text || text === '[image]') {
             throw new Error("Generated content was empty or invalid image placeholder.");

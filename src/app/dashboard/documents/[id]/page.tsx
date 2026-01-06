@@ -13,9 +13,13 @@ interface PageProps {
     params: Promise<{ id: string }>
 }
 
+export const dynamic = 'force-dynamic'
+
 export default async function DocumentViewPage({ params }: PageProps) {
     const { id } = await params
     const document = await getDocument(id)
+
+    console.log('[EVIDENCE] UI Fetched Substring (page render):', document?.content?.substring(0, 120))
 
     if (!document) {
         notFound()
