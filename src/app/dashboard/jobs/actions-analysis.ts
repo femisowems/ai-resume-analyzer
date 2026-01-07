@@ -15,7 +15,7 @@ export async function triggerJobAnalysis(jobId: string) {
         .from('job_applications')
         .select(`
             *,
-            resume_version:resume_versions(
+            resume_version:resume_versions!resume_version_id(
                 id,
                 content
             )

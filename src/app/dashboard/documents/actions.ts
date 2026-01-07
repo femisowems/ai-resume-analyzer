@@ -520,7 +520,7 @@ export async function generateCoverLetterAction(jobId: string) {
 
     const { data: job } = await supabase
         .from('job_applications')
-        .select('*, resume_version:resume_versions(*)')
+        .select('*, resume_version:resume_versions!resume_version_id(*)')
         .eq('id', jobId)
         .single()
 
@@ -553,7 +553,7 @@ export async function generateThankYouAction(
 
     const { data: job } = await supabase
         .from('job_applications')
-        .select('*, resume_version:resume_versions(*)')
+        .select('*, resume_version:resume_versions!resume_version_id(*)')
         .eq('id', jobId)
         .single()
 
