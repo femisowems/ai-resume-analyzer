@@ -16,6 +16,7 @@ import {
     selectNextActions,
     batchEvaluateDocumentStatuses
 } from '@/lib/gemini-assets'
+import { addTimelineEvent } from './actions'
 
 // ------------------------------------------------------------------
 // 1. Fetch Application Assets Data
@@ -71,12 +72,18 @@ export async function fetchApplicationAssets(
         .eq('job_id', jobId)
         .order('priority', { ascending: true })
         .order('document_type', { ascending: true })
+        .order('last_updated_at', { ascending: false })
 
     const documents = jobDocuments || []
 
     // Separate required and optional documents
     const required_documents = documents.filter(d => d.priority === 'required')
     const optional_documents = documents.filter(d => d.priority === 'optional')
+
+    console.log(`[EVIDENCE] fetchApplicationAssets returning ${documents.length} docs for job ${jobId}`)
+    documents.forEach(d => {
+        console.log(`[EVIDENCE] Doc ID: ${d.document_id}, Type: ${d.document_type}, Status: ${d.status}, Content Substring: ${(d as any).document?.content?.substring(0, 50)}...`)
+    })
 
     // Calculate days in current stage
     const daysInStage = Math.floor(
@@ -117,6 +124,7 @@ export async function fetchSuggestedActions(jobId: string): Promise<ContextActio
         .from('job_documents')
         .select('*, document:documents(*)')
         .eq('job_id', jobId)
+        .order('last_updated_at', { ascending: false })
 
     const documents = jobDocuments || []
     const required_documents = documents.filter(d => d.priority === 'required')
@@ -244,6 +252,14 @@ export async function changeJobResume(
                 triggered_by: 'resume_change'
             })
     }
+
+    // Log the change
+    await addTimelineEvent(
+        jobId,
+        'stage_change',
+        'Resume Updated',
+        `Linked a new resume version: v${newResumeVersion.version_number}`
+    )
 
     revalidatePath(`/dashboard/jobs/${jobId}`)
 
@@ -398,7 +414,8 @@ export async function regenerateJobDocument(
         company_name: jobData.company_name,
         resume_content: resumeContent,
         job_description: jobData.job_description,
-        previous_content: previousContent
+        previous_content: previousContent,
+        current_date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
     })
 
     console.log('[EVIDENCE] Gemini Output Substring:', newContent.substring(0, 120))
@@ -406,13 +423,38 @@ export async function regenerateJobDocument(
     // Update document content
     const targetDocId = jobDoc?.document_id || rawDoc?.document_id
     if (targetDocId) {
-        await supabase
+        const { error: updateError } = await supabase
             .from('documents')
             .update({
-                content: newContent,
-                updated_at: new Date().toISOString()
+                content: newContent
             })
             .eq('id', targetDocId)
+
+        if (updateError) {
+            console.error('[EVIDENCE] DB Update Error (documents):', updateError)
+        }
+
+        // Update the timestamp on the job_documents row too
+        const { error: jobDocError } = await supabase
+            .from('job_documents')
+            .update({
+                last_updated_at: new Date().toISOString(),
+                status: 'ready'
+            })
+            .eq('id', jobDocumentId)
+
+        if (jobDocError) {
+            console.error('[EVIDENCE] DB Update Error (job_documents):', jobDocError)
+        }
+
+        // Log timeline event
+        const docTypeLabel = (jobDoc?.document_type || rawDoc?.document_type || 'document').replace('_', ' ')
+        await addTimelineEvent(
+            jobDoc?.job_id || rawDoc?.job_id || '',
+            'document_created',
+            `${docTypeLabel.charAt(0).toUpperCase() + docTypeLabel.slice(1)} Regenerated`,
+            `Updated content for your ${docTypeLabel}`
+        )
 
         // EVIDENCE: Re-select from DB
         const { data: verifyRow } = await supabase.from('documents').select('content').eq('id', targetDocId).single()
@@ -527,7 +569,8 @@ export async function generateJobDocument(
         job_title: job.job_title,
         company_name: job.company_name,
         resume_content: resumeContent,
-        job_description: job.job_description
+        job_description: job.job_description,
+        current_date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
     })
 
     // Create document
@@ -614,6 +657,15 @@ export async function generateJobDocument(
                     triggered_by: 'user'
                 })
         }
+
+        // Log timeline event
+        const label = documentType.replace('_', ' ')
+        await addTimelineEvent(
+            jobId,
+            'document_created',
+            `${label.charAt(0).toUpperCase() + label.slice(1)} Generated`,
+            `Created base content for your ${label}`
+        )
     }
 
     revalidatePath(`/dashboard/jobs/${jobId}`)

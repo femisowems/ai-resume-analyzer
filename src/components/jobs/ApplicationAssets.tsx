@@ -46,6 +46,14 @@ export function ApplicationAssets({ jobId, jobStage, assetsData }: ApplicationAs
         return () => { isMounted = false }
     }, [jobId])
 
+    useEffect(() => {
+        console.log('[EVIDENCE] ApplicationAssets props updated:', assetsData.required_documents.map(d => ({
+            id: d.id,
+            docId: d.document_id,
+            contentSnippet: (d as any).document?.content?.substring(0, 30)
+        })))
+    }, [assetsData])
+
     const handleChangeResume = () => {
         setIsResumeModalOpen(true)
     }

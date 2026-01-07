@@ -49,6 +49,12 @@ export async function updateJobStatus(jobId: string, status: JobStatus) {
 
     // Log activity
     await addJobActivity(jobId, 'STATUS_CHANGE', `Moved to ${status}`)
+    await addTimelineEvent(
+        jobId,
+        'stage_change',
+        'Status Updated',
+        `Moved application to ${status}`
+    )
 
     revalidatePath('/dashboard/jobs')
 }
@@ -80,17 +86,32 @@ export async function addJobActivity(
     }
 }
 
-export async function getJobActivities(jobId: string) {
+export async function addTimelineEvent(
+    jobId: string,
+    type: 'stage_change' | 'email_sent' | 'interview_scheduled' | 'document_created' | 'note_added',
+    title: string,
+    description?: string,
+    metadata: any = {}
+) {
     const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
-    const { data, error } = await supabase
-        .from('job_activities')
-        .select('*')
-        .eq('job_id', jobId)
-        .order('created_at', { ascending: false })
+    if (!user) return // Silently fail if no user
 
-    if (error) throw error
-    return data as JobActivity[]
+    const { error } = await supabase
+        .from('job_timeline_events')
+        .insert({
+            job_id: jobId,
+            event_type: type,
+            title,
+            description,
+            metadata,
+            occurred_at: new Date().toISOString()
+        })
+
+    if (error) {
+        console.error('Error adding timeline event:', error)
+    }
 }
 
 // ------------------------------------------------------------------
@@ -123,7 +144,7 @@ export async function createJobApplication(formData: FormData) {
         applied_date: new Date().toISOString()
     }
 
-    if (resumeId) insertData.resume_id = resumeId
+    if (resumeId) insertData.resume_version_id = resumeId
     if (notes) insertData.notes = notes
 
     // Insert
@@ -155,24 +176,42 @@ export async function createJobApplication(formData: FormData) {
 
 export async function updateJobApplication(formData: FormData) {
     const id = formData.get('id') as string
-    const status = formData.get('status') as JobStatus
-    // Notes handling if present
-    const notes = formData.get('notes') as string
+    const status = formData.get('status') as JobStatus | null
+    const notes = formData.get('notes') as string | null
+    const resumeId = formData.get('resume_id') as string | null
 
-    if (!id || !status) return
+    if (!id) return
 
     const supabase = await createClient()
 
-    // Update basic fields
-    const updates: any = { status, updated_at: new Date().toISOString() }
-    if (notes) updates.notes = notes
+    // Build update object based on provided fields
+    const updates: any = { updated_at: new Date().toISOString() }
+
+    if (status) updates.status = status
+    if (notes !== null) {
+        updates.notes = notes // Notes can be empty string
+        if (notes.trim() !== '') {
+            await addTimelineEvent(
+                id,
+                'note_added',
+                'Note Updated',
+                'You updated your private notes for this job'
+            )
+        }
+    }
+    if (resumeId !== null) {
+        updates.resume_version_id = resumeId === '' ? null : resumeId
+    }
 
     const { error } = await supabase
         .from('job_applications')
         .update(updates)
         .eq('id', id)
 
-    if (error) throw error
+    if (error) {
+        console.error('Error updating job application:', error)
+        throw error
+    }
 
     revalidatePath(`/dashboard/jobs/${id}`)
     revalidatePath('/dashboard/jobs')

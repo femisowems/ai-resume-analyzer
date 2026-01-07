@@ -84,10 +84,19 @@ export function DocumentCard({ document, variant, onView, onRegenerate, onGenera
         .replace('_', ' ')
         .replace(/\b\w/g, l => l.toUpperCase())
 
+    const dateOptions: Intl.DateTimeFormatOptions = {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    }
+
     const formattedDate = document.last_updated_at
-        ? new Date(document.last_updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        ? new Date(document.last_updated_at).toLocaleString('en-US', dateOptions)
         : document.generated_at
-            ? new Date(document.generated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+            ? new Date(document.generated_at).toLocaleString('en-US', dateOptions)
             : null
 
     return (

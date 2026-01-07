@@ -273,6 +273,7 @@ export async function regenerateDocument(params: {
     resume_content: string;
     job_description?: string;
     previous_content?: string;
+    current_date?: string;
 }): Promise<string> {
     const documentTypeLabel = params.document_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
 
@@ -295,6 +296,10 @@ ${params.job_description.slice(0, 10000)}
 """
 ` : ''}
 
+${params.current_date ? `
+Current Date: ${params.current_date}
+` : ''}
+
 ${params.previous_content ? `
 Previous Version (Reference ONLY):
 """
@@ -308,7 +313,8 @@ CRITICAL CONSTRAINTS:
 2. DO NOT invent projects, skills, or accomplishments.
 3. Tone: Professional, confident, personalized.
 4. TAILORING: You MUST reference specific requirements from the Job Description (if provided) and explain how the candidate meets them. Generic letters are unacceptable.
-5. Length: 
+5. DATE HANDLING: If "Current Date" is provided above, you MUST use it in the header. DO NOT use placeholders like "[Current Date]".
+6. Length: 
    - Cover letter: 3-4 paragraphs, ~300 words
    - Thank you email: 2-3 paragraphs, ~150 words
    - Follow-up email: 2 paragraphs, ~100 words

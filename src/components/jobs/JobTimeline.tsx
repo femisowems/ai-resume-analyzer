@@ -7,8 +7,10 @@ interface JobTimelineProps {
     events: JobTimelineEvent[]
 }
 
-export function JobTimeline({ events }: JobTimelineProps) {
-    if (events.length === 0) {
+export function JobTimeline({ events = [] }: JobTimelineProps) {
+    const limitedEvents = events.slice(0, 3)
+
+    if (limitedEvents.length === 0) {
         return (
             <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-100 border-dashed">
                 <p className="text-sm text-gray-500">No activity recorded yet.</p>
@@ -40,12 +42,12 @@ export function JobTimeline({ events }: JobTimelineProps) {
     return (
         <div className="flow-root">
             <ul role="list" className="-mb-8">
-                {events.map((event, eventIdx) => {
+                {limitedEvents.map((event, eventIdx) => {
                     const Icon = getIcon(event.event_type)
                     return (
                         <li key={event.id}>
                             <div className="relative pb-4">
-                                {eventIdx !== events.length - 1 ? (
+                                {eventIdx !== limitedEvents.length - 1 ? (
                                     <span className="absolute top-3 left-3 -ml-px h-full w-0.5 bg-gray-100" aria-hidden="true" />
                                 ) : null}
                                 <div className="relative flex space-x-3">
