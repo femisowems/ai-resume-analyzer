@@ -86,8 +86,11 @@ export interface JobMatchAnalysis {
     missing_keywords: string[];
     present_keywords: string[];
     overall_fit: string;
-    analysis_text: string;
-    interview_prep_questions: string[];
+    executive_summary: string;
+    strengths: string[];
+    gaps: string[];
+    verdict: string;
+    analysis_text: string; // Keep for backward compatibility or raw output
 }
 
 export async function analyzeJobMatch(resumeText: string, jobDescription: string): Promise<JobMatchAnalysis> {
@@ -102,28 +105,46 @@ export async function analyzeJobMatch(resumeText: string, jobDescription: string
     1. Score the match (0-100). Be strict. 70+ is good.
     2. Extract KEYWORDS from JD that are present in Resume.
     3. Extract KEYWORDS from JD that are MISSING in Resume.
-    4. Provide a textual analysis of the fit (strengths/weaknesses).
+    4. Provide a structured analysis:
+       - Executive Summary: 2-3 sentences.
+       - Strengths: Key alignment points.
+       - Gaps: Critical missing skills/experience.
+       - Verdict: "Strong Fit", "Potential", or "Not a Fit".
+    5. Provide a textual analysis (legacy format) for compatibility.
 
     Output JSON:
     {
       "match_score": number, // 0-100
       "keywords_matched": ["string"],
       "missing_keywords": ["string"],
-      "present_keywords": ["string"], // same as keywords_matched, for consistency
-      "overall_fit": "string",
-      "analysis_text": "string (Detailed feedback paragraph)",
-      "interview_prep_questions": ["string"] // Legacy field, keep empty or minimal
+      "present_keywords": ["string"], 
+      "executive_summary": "string",
+      "strengths": ["string"],
+      "gaps": ["string"],
+      "verdict": "string",
+      "analysis_text": "string"
     }
     `;
 
     try {
         const result = await model.generateContent(prompt);
         const text = result.response.text();
-        const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
+
+        // Robust JSON extraction
+        const start = text.indexOf('{');
+        const end = text.lastIndexOf('}');
+
+        if (start === -1 || end === -1) {
+            throw new Error("Invalid JSON response format from AI");
+        }
+
+        const cleanJson = text.substring(start, end + 1);
         return JSON.parse(cleanJson) as JobMatchAnalysis;
-    } catch (error) {
+    } catch (error: any) {
         console.error("Gemini Job Match Error:", error);
-        throw new Error("Failed to analyze job match");
+        // Include underlying error message for better debugging
+        const errorMessage = error.message || "Unknown error";
+        throw new Error(`Failed to analyze job match: ${errorMessage}`);
     }
 }
 

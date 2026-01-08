@@ -173,6 +173,8 @@ export default async function ResumeDetailPage({ params, searchParams }: { param
                 score={analysis.total}
                 lastAnalyzed={currentVersionRaw?.created_at || resume.updated_at}
                 jobs={jobs as any || []}
+                resumeId={resume.id}
+                currentJobId={jobId}
             />
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

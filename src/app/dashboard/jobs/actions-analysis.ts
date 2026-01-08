@@ -27,7 +27,8 @@ export async function triggerJobAnalysis(jobId: string) {
     if (!job) throw new Error('Job not found')
 
     const resumeContent = (job.resume_version?.content as any)?.raw_text || "No resume text available."
-    const jobDescription = job.notes || job.description || "No job description available."
+    // Prioritize the dedicated job_description field, then fallback to description, then notes.
+    const jobDescription = job.job_description || job.description || job.notes || "No job description available."
 
     // Run Analysis
     const analysis: JobMatchAnalysis = await analyzeJobMatch(resumeContent, jobDescription)
@@ -80,7 +81,7 @@ export async function triggerInterviewPrep(jobId: string) {
     const prepData: InterviewPrepData = await generateInterviewPrep(
         job.job_title,
         job.company_name,
-        job.notes || job.description || ""
+        job.job_description || job.description || job.notes || ""
     )
 
     await supabase

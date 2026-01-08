@@ -324,3 +324,148 @@ export async function analyzeResumeAction(resumeId: string) {
         throw new Error(e.message || "Analysis failed")
     }
 }
+
+// ... existing code ...
+
+const { optimizeResumeForJob } = await import('@/lib/gemini')
+
+export async function generateOptimizationAction(resumeId: string, jobId: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    // 1. Fetch Resume Content
+    const { data: resume } = await supabase
+        .from('resumes')
+        .select(`id, title, current_version:resume_versions(content)`)
+        .eq('id', resumeId)
+        .eq('user_id', user.id)
+        .single()
+
+    if (!resume || !resume.current_version) throw new Error('Resume not found')
+
+    const currentVersion = Array.isArray(resume.current_version) ? resume.current_version[0] : resume.current_version
+    const content = currentVersion.content as any
+    const resumeText = content.raw_text || JSON.stringify(content)
+
+    // 2. Fetch Job Description
+    const { data: job } = await supabase
+        .from('job_applications')
+        .select('job_description, job_title, company_name')
+        .eq('id', jobId)
+        .eq('user_id', user.id)
+        .single()
+
+    const jobDescription = job?.job_description
+
+    // Allow optimization even without a specific job (General Optimization)
+    // But for this specific feature request, we usually have a job.
+    // If no JD, we can pass a generic instruction.
+    const effectiveJD = jobDescription || "General Software Engineering Role focusing on modern web technologies."
+
+
+    // 3. Call AI
+    const optimizationResult = await optimizeResumeForJob(resumeText, effectiveJD)
+
+    return {
+        optimization: optimizationResult,
+        original: content,
+        resumeTitle: resume.title,
+        jobTitle: job?.job_title || "General Application",
+        companyName: job?.company_name || "General"
+    }
+}
+
+
+export async function saveOptimizedVersionAction(resumeId: string, newContent: any, jobId: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    // 1. Get current Max Version Number
+    const { data: resume } = await supabase
+        .from('resumes')
+        .select(`id, current_version:resume_versions(version_number)`)
+        .eq('id', resumeId)
+        .eq('user_id', user.id)
+        .single()
+
+    if (!resume) throw new Error('Resume not found')
+
+    const currentVerNum = Array.isArray(resume.current_version)
+        ? (resume.current_version[0] as any)?.version_number
+        : (resume.current_version as any)?.version_number
+
+    const nextVer = (currentVerNum || 0) + 1
+
+    // 2. Prepare Content & Text Preview
+    // We generate a Markdown representation so the Documents Hub can show a preview.
+    const safeContent = newContent || {};
+    const personalInfo = safeContent.personal_info || {};
+
+    const markdownPreview = `
+${personalInfo.first_name || ''} ${personalInfo.last_name || ''}
+${personalInfo.email || ''} | ${personalInfo.phone || ''} | ${personalInfo.linkedin || ''}
+
+SUMMARY
+${safeContent.summary || ''}
+
+EXPERIENCE
+${(safeContent.experience || []).map((exp: any) => `${exp.role} at ${exp.company}
+${exp.duration}
+${exp.description}`).join('\n\n')}
+
+PROJECTS
+${(safeContent.projects || []).map((proj: any) => `${proj.name}
+${proj.description}`).join('\n\n')}
+
+SKILLS
+${(safeContent.skills || []).join(', ')}
+
+EDUCATION
+${(safeContent.education || []).map((edu: any) => `${edu.degree}
+${edu.school}, ${edu.year}`).join('\n')}
+    `.trim();
+
+    // Inject raw_text into the content if it doesn't exist (it shouldn't for structured)
+    const contentToSave = {
+        ...safeContent,
+        raw_text: markdownPreview,
+        text: markdownPreview // redundancy for safety with older accessors
+    };
+
+    // 3. Create New Version
+    const { data: newVersion, error } = await supabase
+        .from('resume_versions')
+        .insert({
+            resume_id: resumeId,
+            version_number: nextVer,
+            content: contentToSave,
+            status: 'completed', // It's already optimized
+            created_at: new Date().toISOString()
+        })
+        .select()
+        .single()
+
+    if (error) throw new Error('Failed to save version')
+
+    // 4. Update Resume Pointer
+    await supabase
+        .from('resumes')
+        .update({ current_version_id: newVersion.id })
+        .eq('id', resumeId)
+
+    // 5. Update Job Link
+    if (jobId) {
+        await supabase
+            .from('job_applications')
+            .update({ resume_version_id: newVersion.id })
+            .eq('id', jobId)
+    }
+
+    revalidatePath(`/dashboard/resumes/${resumeId}`)
+    revalidatePath(`/dashboard/jobs/${jobId}`)
+    revalidatePath('/dashboard/documents') // Ensure documents hub updates
+
+    return { success: true, versionId: newVersion.id }
+}

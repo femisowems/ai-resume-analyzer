@@ -8,9 +8,11 @@ interface Props {
     score: number
     lastAnalyzed: string
     jobs: Job[]
+    resumeId: string
+    currentJobId?: string
 }
 
-export default function ResumeAnalysisHeader({ title, score, lastAnalyzed, jobs }: Props) {
+export default function ResumeAnalysisHeader({ title, score, lastAnalyzed, jobs, resumeId, currentJobId }: Props) {
     return (
         <div className="bg-slate-900 border-b border-slate-800 text-white">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
@@ -55,9 +57,12 @@ export default function ResumeAnalysisHeader({ title, score, lastAnalyzed, jobs 
                             <Download className="h-4 w-4 mr-2" />
                             Export
                         </button>
-                        <button className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-md text-sm font-medium transition-colors">
+                        <Link
+                            href={`/dashboard/resumes/${resumeId}/optimize${currentJobId ? `?jobId=${currentJobId}` : ''}`}
+                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-md text-sm font-medium transition-colors"
+                        >
                             Optimize Now
-                        </button>
+                        </Link>
                     </div>
 
                 </div>

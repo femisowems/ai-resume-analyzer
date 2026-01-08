@@ -659,3 +659,86 @@ export async function rewriteResumeSectionWithGemini(
     throw new Error("Failed to rewrite section with Gemini");
   }
 }
+
+export interface OptimizationResult {
+  summary: {
+    why_mismatched: string;
+    focus: string;
+  };
+  rewritten_content: import("@/lib/types").StructuredResumeContent;
+  keyword_analysis: {
+    missing: string[];
+    weak: string[];
+    placements: { keyword: string; placement: string; confidence: 'High' | 'Medium' | 'Low' }[];
+  };
+}
+
+export async function optimizeResumeForJob(
+  resumeText: string,
+  jobDescription: string
+): Promise<OptimizationResult> {
+  const prompt = `
+    You are an expert Resume Strategist and Career Coach.
+    Your task: Rewrite the given resume to perfectly target the Job Description, WHILE MAINTAINING TRUTH.
+    
+    GOAL: Maximize the match score by clarifying impact, reordering content, and infusing keywords naturally.
+    ABSOLUTE RULE: Do not invent experience, dates, or companies. Only optimize *how* existing experience is presented.
+
+    Job Description:
+    """
+    ${jobDescription.slice(0, 10000)}
+    """
+
+    Resume Text:
+    """
+    ${resumeText.slice(0, 20000)}
+    """
+
+    Output JSON Schema:
+    {
+      "summary": {
+        "why_mismatched": "One sentence explaining the main gap between original resume and job.",
+        "focus": "What this optimization focused on (e.g. 'Emphasized React experience and added leadership metrics')."
+      },
+      "rewritten_content": {
+         "summary": { "content": "Optimized professional summary" },
+         "contact_info": { "content": "Contact info as string" },
+         "skills": { "content": "Comma separated string of skills" },
+         "experience": [
+            { 
+              "id": "string", 
+              "role": "string", 
+              "company": "string", 
+              "duration": "string", 
+              "location": "string",
+              "bullets": ["Optimized bullet 1", "Optimized bullet 2"] 
+            }
+         ],
+         "education": [
+            { "id": "string", "degree": "string", "school": "string", "year": "string" }
+         ],
+         "projects": [
+            { "id": "string", "name": "string", "bullets": ["string"] }
+         ]
+      },
+      "keyword_analysis": {
+        "missing": ["Critical keyword missing from original"],
+        "weak": ["Keyword present but not emphasized enough"],
+        "placements": [
+           { "keyword": "string", "placement": "Summary" | "Experience" | "Skills", "confidence": "High" | "Medium" | "Low" }
+        ]
+      }
+    }
+  `;
+
+  try {
+    const result = await generateWithRetry(prompt, 3, { expectJson: true });
+    const response = await result.response;
+    const text = response.text();
+    const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    return JSON.parse(cleanJson) as OptimizationResult;
+  } catch (error: any) {
+    console.error("Gemini Optimization Error:", error);
+    throw new Error(`Failed to optimize resume: ${error.message}`);
+  }
+}

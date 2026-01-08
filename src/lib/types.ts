@@ -145,6 +145,7 @@ export interface Job {
         notes?: string
     }
     description?: string // Description is optional or loaded on demand
+    job_description?: string // New dedicated column for JD text
     match_score?: number
     applied_date?: string
     last_contact_date?: string
@@ -199,7 +200,7 @@ export interface DocumentJobLink {
 export interface Document {
     id: string
     user_id: string
-    type: 'cover_letter' | 'thank_you' | 'linkedin' // Resumes are separate table currently, though we might want to unify concept in UI
+    type: 'cover_letter' | 'thank_you' | 'linkedin' | 'resume' // Resumes are separate table currently, though we might want to unify concept in UI
     title: string
     content: string
     status: 'draft' | 'active' | 'archived' | 'template'
@@ -262,6 +263,10 @@ export interface JobExtended extends Job {
         missing_keywords: string[]
         present_keywords: string[]
         analysis_text: string
+        executive_summary?: string
+        strengths?: string[]
+        gaps?: string[]
+        verdict?: string
     }
     interview_prep_json?: {
         questions: string[]
