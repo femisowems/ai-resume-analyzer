@@ -358,14 +358,29 @@ export async function generateOptimizationAction(resumeId: string, jobId: string
 
     const jobDescription = job?.job_description
 
+    // 3. Fetch User Profile Context (NEW)
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('target_roles, skills, experience_summary')
+        .eq('id', user.id)
+        .single()
+
+    // Construct Profile Context for AI
+    const profileContext = profile ? {
+        targetRoles: profile.target_roles || [],
+        skills: profile.skills || [],
+        experienceSummary: profile.experience_summary || ''
+    } : undefined;
+
+
     // Allow optimization even without a specific job (General Optimization)
     // But for this specific feature request, we usually have a job.
     // If no JD, we can pass a generic instruction.
     const effectiveJD = jobDescription || "General Software Engineering Role focusing on modern web technologies."
 
 
-    // 3. Call AI
-    const optimizationResult = await optimizeResumeForJob(resumeText, effectiveJD)
+    // 4. Call AI with Profile Context
+    const optimizationResult = await optimizeResumeForJob(resumeText, effectiveJD, profileContext)
 
     return {
         optimization: optimizationResult,
@@ -376,6 +391,15 @@ export async function generateOptimizationAction(resumeId: string, jobId: string
     }
 }
 
+
+// Helper to sanitize Gemini output which might be { content: [...] } or { list: [...] }
+function ensureArray(input: any): any[] {
+    if (!input) return [];
+    if (Array.isArray(input)) return input;
+    if (input.content && Array.isArray(input.content)) return input.content;
+    if (input.list && Array.isArray(input.list)) return input.list;
+    return [];
+}
 
 export async function saveOptimizedVersionAction(resumeId: string, newContent: any, jobId: string) {
     const supabase = await createClient()
@@ -399,9 +423,14 @@ export async function saveOptimizedVersionAction(resumeId: string, newContent: a
     const nextVer = (currentVerNum || 0) + 1
 
     // 2. Prepare Content & Text Preview
-    // We generate a Markdown representation so the Documents Hub can show a preview.
     const safeContent = newContent || {};
     const personalInfo = safeContent.personal_info || {};
+
+    // Sanitize arrays to prevent "join is not a function" errors
+    const sanitizedSkills = ensureArray(safeContent.skills).map(s => typeof s === 'string' ? s : (s.name || s.content || JSON.stringify(s)));
+    const sanitizedExperience = ensureArray(safeContent.experience);
+    const sanitizedProjects = ensureArray(safeContent.projects);
+    const sanitizedEducation = ensureArray(safeContent.education);
 
     const markdownPreview = `
 ${personalInfo.first_name || ''} ${personalInfo.last_name || ''}
@@ -411,25 +440,29 @@ SUMMARY
 ${safeContent.summary || ''}
 
 EXPERIENCE
-${(safeContent.experience || []).map((exp: any) => `${exp.role} at ${exp.company}
+${sanitizedExperience.map((exp: any) => `${exp.role} at ${exp.company}
 ${exp.duration}
 ${exp.description}`).join('\n\n')}
 
 PROJECTS
-${(safeContent.projects || []).map((proj: any) => `${proj.name}
+${sanitizedProjects.map((proj: any) => `${proj.name}
 ${proj.description}`).join('\n\n')}
 
 SKILLS
-${(safeContent.skills || []).join(', ')}
+${sanitizedSkills.join(', ')}
 
 EDUCATION
-${(safeContent.education || []).map((edu: any) => `${edu.degree}
+${sanitizedEducation.map((edu: any) => `${edu.degree}
 ${edu.school}, ${edu.year}`).join('\n')}
     `.trim();
 
     // Inject raw_text into the content if it doesn't exist (it shouldn't for structured)
     const contentToSave = {
         ...safeContent,
+        skills: sanitizedSkills, // Save the sanitized version back
+        experience: sanitizedExperience,
+        projects: sanitizedProjects,
+        education: sanitizedEducation,
         raw_text: markdownPreview,
         text: markdownPreview // redundancy for safety with older accessors
     };

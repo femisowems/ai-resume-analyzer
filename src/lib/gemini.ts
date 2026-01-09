@@ -673,16 +673,31 @@ export interface OptimizationResult {
   };
 }
 
+export interface ProfileContext {
+  targetRoles: string[];
+  skills: string[];
+  experienceSummary: string;
+}
+
 export async function optimizeResumeForJob(
   resumeText: string,
-  jobDescription: string
+  jobDescription: string,
+  profileContext?: ProfileContext
 ): Promise<OptimizationResult> {
   const prompt = `
     You are an expert Resume Strategist and Career Coach.
-    Your task: Rewrite the given resume to perfectly target the Job Description, WHILE MAINTAINING TRUTH.
+    Your task: Rewrite the given resume to perfectly target the Job Description, WHILE MAINTAINING TRUTH and aligning with the user's Career Identity.
     
     GOAL: Maximize the match score by clarifying impact, reordering content, and infusing keywords naturally.
-    ABSOLUTE RULE: Do not invent experience, dates, or companies. Only optimize *how* existing experience is presented.
+    
+    CRITICAL CONTEXT (User's Proficiency & Goals):
+    ${profileContext ? `
+    - Target Roles: ${profileContext.targetRoles.join(', ') || 'N/A'}
+    - Key Skills (Prioritize these): ${profileContext.skills.join(', ') || 'N/A'}
+    - Professional Bio/Focus: "${profileContext.experienceSummary || 'N/A'}"
+    ` : 'No specific user context provided.'}
+
+    ABSOLUTE RULE: Do not invent experience, dates, or companies. Only optimize *how* existing experience is presented. Use the "Key Skills" provided above to highlight relevant expertise if it exists in the resume.
 
     Job Description:
     """
@@ -697,8 +712,8 @@ export async function optimizeResumeForJob(
     Output JSON Schema:
     {
       "summary": {
-        "why_mismatched": "One sentence explaining the main gap between original resume and job.",
-        "focus": "What this optimization focused on (e.g. 'Emphasized React experience and added leadership metrics')."
+        "why_mismatched": "One sentence explaining the main gap.",
+        "focus": "How we aligned the resume with the User's Target Roles and the Job Description."
       },
       "rewritten_content": {
          "summary": { "content": "Optimized professional summary" },

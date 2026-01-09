@@ -4,6 +4,9 @@ import { useState, useTransition } from 'react'
 import { User, Mail, Shield, Save, Loader2, Target, Briefcase, Link as LinkIcon, FileText } from 'lucide-react'
 import { updateProfile } from './actions'
 import { Profile } from '@/lib/types'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { TagInput } from "@/components/ui/tag-input"
 
 interface ProfileFormProps {
     user: {
@@ -23,6 +26,8 @@ export default function ProfileForm({ user, profile }: ProfileFormProps) {
             try {
                 await updateProfile(formData)
                 setMessage({ type: 'success', text: 'Profile updated successfully!' })
+                // Clear message after 3 seconds
+                setTimeout(() => setMessage(null), 3000)
             } catch (error) {
                 setMessage({ type: 'error', text: 'Failed to update profile. Please try again.' })
             }
@@ -30,228 +35,227 @@ export default function ProfileForm({ user, profile }: ProfileFormProps) {
     }
 
     return (
-        <form action={handleSubmit} className="space-y-6">
-            {/* Personal Information */}
-            <div className="bg-white shadow rounded-lg overflow-hidden">
-                <div className="p-6 border-b border-gray-200">
-                    <h2 className="text-lg font-medium text-gray-900">Personal Information</h2>
-                    <p className="mt-1 text-sm text-gray-500">Update your identity details.</p>
-                </div>
+        <form action={handleSubmit} className="space-y-6 pb-20">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-                <div className="p-6 space-y-6">
-                    {/* Full Name Input */}
-                    <div>
-                        <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
-                            Full Name
-                        </label>
-                        <div className="mt-1 flex rounded-md shadow-sm">
-                            <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500">
-                                <User className="h-4 w-4" />
-                            </span>
-                            <input
-                                type="text"
-                                name="fullName"
-                                id="fullName"
-                                defaultValue={profile?.full_name || ''}
-                                className="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md border border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                placeholder="John Doe"
-                            />
-                        </div>
-                    </div>
+                {/* LEFT COLUMN: Identity & Security (4 cols) */}
+                <div className="lg:col-span-4 space-y-6">
 
-                    {/* Read-only User ID */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">User ID</label>
-                            <div className="mt-1 flex items-center p-3 bg-gray-50 rounded-md border border-gray-200 text-gray-500 text-sm font-mono truncate">
-                                {user.id}
+                    {/* Identity Card */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-lg">Identity</CardTitle>
+                            <CardDescription>Your personal account details.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {/* Avatar / Name */}
+                            <div className="flex flex-col items-center p-4 bg-muted/30 rounded-lg mb-4">
+                                <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center text-primary text-2xl font-bold mb-3">
+                                    {profile?.full_name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || 'U'}
+                                </div>
+                                <p className="text-sm text-muted-foreground">{user.email}</p>
                             </div>
-                        </div>
 
-                        {/* Read-only Email */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Email Address</label>
-                            <div className="mt-1 flex items-center p-3 bg-gray-50 rounded-md border border-gray-200 text-gray-500 text-sm truncate">
-                                <Mail className="h-4 w-4 mr-2" />
-                                {user.email || 'No email provided'}
+                            <div className="space-y-2">
+                                <label htmlFor="fullName" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                    Full Name
+                                </label>
+                                <div className="relative">
+                                    <User className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                                    <input
+                                        type="text"
+                                        name="fullName"
+                                        id="fullName"
+                                        defaultValue={profile?.full_name || ''}
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 pl-9 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                        placeholder="Your Name"
+                                    />
+                                </div>
                             </div>
-                        </div>
-                    </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium leading-none">User ID</label>
+                                <div className="flex items-center p-2 rounded-md bg-muted text-xs font-mono text-muted-foreground break-all">
+                                    {user.id}
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Security Card */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-lg">Security</CardTitle>
+                            <CardDescription>Managed via authentication provider.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex items-start space-x-3 p-3 bg-green-50 border border-green-100 rounded-md">
+                                <Shield className="h-5 w-5 text-green-600 mt-0.5" />
+                                <div>
+                                    <h3 className="text-sm font-medium text-green-800">Account Secured</h3>
+                                    <p className="text-xs text-green-700 mt-1">
+                                        Password resets and MFA are handled securely by Supabase Auth.
+                                    </p>
+                                </div>
+                            </div>
+                            <Button variant="outline" className="w-full mt-4" type="button" disabled>
+                                Reset Password (Coming Soon)
+                            </Button>
+                        </CardContent>
+                    </Card>
+
+                    {/* Links */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-lg">Online Presence</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <label htmlFor="linkedinUrl" className="text-sm font-medium">LinkedIn URL</label>
+                                <div className="relative">
+                                    <LinkIcon className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                                    <input
+                                        type="url"
+                                        name="linkedinUrl"
+                                        id="linkedinUrl"
+                                        defaultValue={profile?.linkedin_url || ''}
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 pl-9 text-sm focus-visible:ring-2 focus-visible:ring-ring"
+                                        placeholder="https://linkedin.com/in/..."
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label htmlFor="portfolioUrl" className="text-sm font-medium">Portfolio / Website</label>
+                                <div className="relative">
+                                    <LinkIcon className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                                    <input
+                                        type="url"
+                                        name="portfolioUrl"
+                                        id="portfolioUrl"
+                                        defaultValue={profile?.portfolio_url || ''}
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 pl-9 text-sm focus-visible:ring-2 focus-visible:ring-ring"
+                                        placeholder="https://myportfolio.com"
+                                    />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
-            </div>
 
-            {/* Career Context (The Brain) */}
-            <div className="bg-white shadow rounded-lg overflow-hidden">
-                <div className="p-6 border-b border-gray-200 bg-indigo-50">
-                    <h2 className="text-lg font-medium text-indigo-900">Career Context (The Brain)</h2>
-                    <p className="mt-1 text-sm text-indigo-700">
-                        This data powers the AI. The more you add, the better your results.
-                    </p>
-                </div>
+                {/* RIGHT COLUMN: Career Intelligence (8 cols) */}
+                <div className="lg:col-span-8 space-y-6">
 
-                <div className="p-6 space-y-6">
-                    {/* Target Roles */}
-                    <div>
-                        <label htmlFor="targetRoles" className="block text-sm font-medium text-gray-700">
-                            Target Roles (Comma separated)
-                        </label>
-                        <div className="mt-1 flex rounded-md shadow-sm">
-                            <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500">
-                                <Target className="h-4 w-4" />
-                            </span>
-                            <input
-                                type="text"
-                                name="targetRoles"
-                                id="targetRoles"
-                                defaultValue={profile?.target_roles?.join(', ') || ''}
-                                className="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md border border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                placeholder="Senior Frontend Engineer, Full Stack Developer"
-                            />
-                        </div>
-                        <p className="mt-1 text-xs text-gray-500">These are the titles the AI will optimize for.</p>
-                    </div>
+                    <Card className="border-indigo-100 shadow-sm">
+                        <CardHeader className="bg-indigo-50/50 border-b border-indigo-100/50 pb-4">
+                            <div className="flex items-center space-x-2">
+                                <div className="p-2 bg-indigo-100 rounded-lg">
+                                    <Briefcase className="h-5 w-5 text-indigo-600" />
+                                </div>
+                                <div>
+                                    <CardTitle className="text-xl text-indigo-950">Career Intelligence Profile</CardTitle>
+                                    <CardDescription className="text-indigo-900/70">
+                                        This data calibrates your AI assistant to write exactly like you.
+                                    </CardDescription>
+                                </div>
+                            </div>
+                        </CardHeader>
 
-                    {/* Skills */}
-                    <div>
-                        <label htmlFor="skills" className="block text-sm font-medium text-gray-700">
-                            Top Skills (Comma separated)
-                        </label>
-                        <div className="mt-1 flex rounded-md shadow-sm">
-                            <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500">
-                                <Briefcase className="h-4 w-4" />
-                            </span>
-                            <input
-                                type="text"
-                                name="skills"
-                                id="skills"
-                                defaultValue={profile?.skills?.join(', ') || ''}
-                                className="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md border border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                placeholder="React, TypeScript, Next.js, Tailwind CSS"
-                            />
-                        </div>
-                    </div>
+                        <CardContent className="space-y-8 pt-6">
 
-                    {/* Experience Summary */}
-                    <div>
-                        <label htmlFor="experienceSummary" className="block text-sm font-medium text-gray-700">
-                            Experience Summary / Bio
-                        </label>
-                        <div className="mt-1">
-                            <textarea
-                                id="experienceSummary"
-                                name="experienceSummary"
-                                rows={4}
-                                defaultValue={profile?.experience_summary || ''}
-                                className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md p-2"
-                                placeholder="I have 5 years of experience building scalable web applications with React..."
-                            />
-                        </div>
-                        <p className="mt-1 text-xs text-gray-500">This bio is used to inject your "voice" into cover letters.</p>
-                    </div>
+                            {/* Target Roles */}
+                            <div className="space-y-2">
+                                <div className="flex justify-between items-center">
+                                    <label htmlFor="targetRoles" className="text-base font-semibold text-foreground">Target Roles</label>
+                                    <span className="text-xs text-muted-foreground">Press Enter to add</span>
+                                </div>
+                                <TagInput
+                                    name="targetRoles"
+                                    placeholder="e.g. Senior Frontend Engineer, Product Manager"
+                                    defaultValue={profile?.target_roles || []}
+                                />
+                                <p className="text-xs text-muted-foreground">The specific job titles you are aiming for.</p>
+                            </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Years of Experience */}
-                        <div>
-                            <label htmlFor="yearsOfExperience" className="block text-sm font-medium text-gray-700">
-                                Years of Experience
-                            </label>
-                            <input
-                                type="number"
-                                name="yearsOfExperience"
-                                id="yearsOfExperience"
-                                defaultValue={profile?.years_of_experience || ''}
-                                className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md p-2"
-                            />
-                        </div>
+                            {/* Skills */}
+                            <div className="space-y-2">
+                                <div className="flex justify-between items-center">
+                                    <label htmlFor="skills" className="text-base font-semibold text-foreground">Top Skills</label>
+                                    <span className="text-xs text-muted-foreground">Press Enter to add</span>
+                                </div>
+                                <TagInput
+                                    name="skills"
+                                    placeholder="e.g. React, Python, Strategic Planning"
+                                    defaultValue={profile?.skills || []}
+                                />
+                                <p className="text-xs text-muted-foreground">Your core competencies that should appear in every resume.</p>
+                            </div>
 
-                        {/* LinkedIn URL */}
-                        <div>
-                            <label htmlFor="linkedinUrl" className="block text-sm font-medium text-gray-700">
-                                LinkedIn URL
-                            </label>
-                            <div className="mt-1 flex rounded-md shadow-sm">
-                                <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500">
-                                    <LinkIcon className="h-4 w-4" />
-                                </span>
+                            {/* Years of Experience */}
+                            <div className="space-y-2">
+                                <label htmlFor="yearsOfExperience" className="text-base font-semibold text-foreground">Years of Experience</label>
                                 <input
-                                    type="url"
-                                    name="linkedinUrl"
-                                    id="linkedinUrl"
-                                    defaultValue={profile?.linkedin_url || ''}
-                                    className="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md border border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                    placeholder="https://linkedin.com/in/..."
+                                    type="number"
+                                    name="yearsOfExperience"
+                                    id="yearsOfExperience"
+                                    defaultValue={profile?.years_of_experience || ''}
+                                    className="flex h-10 w-full max-w-[200px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                                 />
                             </div>
-                        </div>
-                    </div>
 
-                    {/* Portfolio URL */}
-                    <div>
-                        <label htmlFor="portfolioUrl" className="block text-sm font-medium text-gray-700">
-                            Portfolio / Personal Website
-                        </label>
-                        <div className="mt-1 flex rounded-md shadow-sm">
-                            <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500">
-                                <LinkIcon className="h-4 w-4" />
-                            </span>
-                            <input
-                                type="url"
-                                name="portfolioUrl"
-                                id="portfolioUrl"
-                                defaultValue={profile?.portfolio_url || ''}
-                                className="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md border border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                placeholder="https://myportfolio.com"
-                            />
-                        </div>
-                    </div>
+                            {/* Bio */}
+                            <div className="space-y-2">
+                                <label htmlFor="experienceSummary" className="text-base font-semibold text-foreground">Professional Bio</label>
+                                <textarea
+                                    id="experienceSummary"
+                                    name="experienceSummary"
+                                    rows={8}
+                                    defaultValue={profile?.experience_summary || ''}
+                                    className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                    placeholder="Briefly describe your career highlights, unique value proposition, and what you bring to the table..."
+                                />
+                                <p className="text-xs text-muted-foreground">Used to inject your "voice" into cover letters and summaries.</p>
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
             </div>
 
-            {/* Action Bar */}
-            <div className="px-6 py-3 bg-gray-50 text-right sm:px-6 flex justify-between items-center bg-white shadow rounded-lg">
-                <div className="text-sm">
-                    {message && (
-                        <span className={message.type === 'success' ? 'text-green-600' : 'text-red-600'}>
-                            {message.text}
-                        </span>
-                    )}
-                </div>
-                <button
-                    type="submit"
-                    disabled={isPending}
-                    className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-                >
-                    {isPending ? (
-                        <>
-                            <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
-                            Saving...
-                        </>
-                    ) : (
-                        <>
-                            <Save className="-ml-1 mr-2 h-4 w-4" />
-                            Save Profile
-                        </>
-                    )}
-                </button>
-            </div>
-
-
-            <div className="bg-white shadow rounded-lg overflow-hidden">
-                <div className="p-6 border-b border-gray-200">
-                    <h2 className="text-lg font-medium text-gray-900">Security</h2>
-                    <p className="mt-1 text-sm text-gray-500">Manage your password and authentication.</p>
-                </div>
-                <div className="p-6">
-                    <div className="flex items-center">
-                        <div className="flex-shrink-0 bg-green-100 rounded-full p-3">
-                            <Shield className="h-6 w-6 text-green-600" />
-                        </div>
-                        <div className="ml-4">
-                            <h3 className="text-sm font-medium text-gray-900">Password</h3>
-                            <p className="text-sm text-gray-500 mt-1">
-                                Password management is currently handled via the login page recovery flow.
-                            </p>
-                        </div>
+            {/* Sticky Action Bar */}
+            <div className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-md border-t border-border p-4 z-50">
+                <div className="max-w-7xl mx-auto flex justify-between items-center px-4 sm:px-6 lg:px-8">
+                    <div className="flex items-center space-x-2">
+                        {message && (
+                            <div className={`text-sm font-medium animate-in fade-in slide-in-from-bottom-2 ${message.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+                                {message.text}
+                            </div>
+                        )}
+                    </div>
+                    <div className="flex items-center space-x-4">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => window.location.reload()}
+                        >
+                            Discard
+                        </Button>
+                        <Button
+                            type="submit"
+                            disabled={isPending}
+                            className="min-w-[140px]"
+                        >
+                            {isPending ? (
+                                <>
+                                    <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
+                                    Saving...
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="-ml-1 mr-2 h-4 w-4" />
+                                    Save Changes
+                                </>
+                            )}
+                        </Button>
                     </div>
                 </div>
             </div>

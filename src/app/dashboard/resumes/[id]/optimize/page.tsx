@@ -90,8 +90,8 @@ export default function OptimizeResumePage() {
             // Clean redirect
             router.push(`/dashboard/resumes/${resumeId}`);
 
-        } catch (error) {
-            toast.error("Could not save the new version. Try again.");
+        } catch (error: any) {
+            toast.error(`Could not save the new version. ${error?.message || 'Try again.'}`);
             setIsSaving(false);
         }
     }

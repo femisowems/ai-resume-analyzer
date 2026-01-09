@@ -17,10 +17,20 @@ export default async function DashboardLayout({
         redirect('/login')
     }
 
+    // Fetch user profile to get the name
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single()
+
     return (
         <div className="min-h-screen bg-background flex flex-col text-foreground">
             <CommandMenu />
-            <DashboardNavigation userEmail={user.email} />
+            <DashboardNavigation
+                userEmail={user.email}
+                userName={profile?.full_name}
+            />
 
             <main className="flex-1 max-w-7xl w-full mx-auto py-6 sm:px-6 lg:px-8">
                 {children}

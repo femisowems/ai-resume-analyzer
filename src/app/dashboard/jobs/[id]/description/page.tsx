@@ -21,7 +21,7 @@ export default async function JobDescriptionPage({ params }: { params: Promise<{
     }
 
     return (
-        <div className="max-w-4xl mx-auto py-8">
+        <div className="max-w-l mx-auto py-8">
             <JobDescriptionEditor
                 jobId={job.id}
                 initialDescription={job.description || undefined}

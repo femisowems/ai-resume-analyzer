@@ -35,7 +35,7 @@ export default async function JobMatchPage({ params }: { params: Promise<{ id: s
     }
 
     return (
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-l mx-auto">
             <MatchAnalysisView
                 analysis={job.match_analysis_json as any}
                 jobId={id}

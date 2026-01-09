@@ -21,7 +21,7 @@ export default async function JobInterviewPage({ params }: { params: Promise<{ i
     }
 
     return (
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-l mx-auto">
             <InterviewPrepView prep={job.interview_prep_json as any} jobId={id} />
         </div>
     )
