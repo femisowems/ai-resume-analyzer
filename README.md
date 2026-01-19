@@ -35,12 +35,37 @@ CareerAI is a comprehensive **Career Intelligence Platform** designed to help jo
 - **Stale Application Detection**: Automatically flags applications that haven't moved in days.
 - **LinkedIn Optimizer**: Turn your resume into a viral-ready LinkedIn post.
 
-## 🛠 Tech Stack
+## 🛠 Technologies & Skills
 
-- **Frontend**: Next.js 16.1 (App Router), React 19, TailwindCSS v4, Framer Motion.
-- **Backend**: Supabase (PostgreSQL, Auth, Storage, Row Level Security).
-- **AI**: Google Gemini API (Gemini 2.5 Flash) & OpenAI API (GPT-4o - Fallback).
-- **Tools**: `dnd-kit` (Kanban), `Brandfetch` (Logos), `mammoth` (Word Docs), `pdf-parse`.
+### Frontend
+- **Framework:** Next.js 16.1 (App Router)
+- **Library:** React 19
+- **Language:** TypeScript
+- **Styling:** TailwindCSS v4, Lucide React
+- **Motion:** Framer Motion
+
+### Backend & Database
+- **Platform:** Supabase
+- **Database:** PostgreSQL
+- **Auth:** Supabase Auth
+- **Storage:** Supabase Storage
+- **Security:** Row Level Security (RLS)
+
+### AI & Intelligence
+- **Primary:** Google Gemini 2.5 Flash
+- **Fallback:** OpenAI GPT-4o
+
+### State & Validation
+- **State Management:** Zustand
+- **Schema Validation:** Zod
+
+### Deployment
+- **Platform:** Vercel
+
+### Tools
+- **Kanban:** dnd-kit
+- **Document Processing:** Mammoth.js (Word), PDF-parse
+- **Testing:** Playwright
 
 ## 🏁 Getting Started
 
